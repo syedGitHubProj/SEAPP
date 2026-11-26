@@ -44,6 +44,37 @@ ABC Furniture (a showroom in Pakistan) runs on an Excel workbook (`Furniture_Sto
 - **Domain:** about US$15–20/year.
 - **All other software in the stack** (.NET, Next.js, Caddy, QuestPDF Community, ClosedXML, GitHub Actions on the free tier) is free.
 
+## Domain and hosting layout (owner-confirmed 2026-11-26)
+The owner registered **selease.com**. Note the spelling: one "L", while the app's name has two ("SellEase").
+
+**Each furniture client gets its own subdomain:**
+- **ABC Furniture:** `abc.selease.com`. Its staging copy is at `abc-staging.selease.com`.
+- **A second client:** `xyz.selease.com`, with staging at `xyz-staging.selease.com`.
+- Each client runs a **separate copy of the same app**:
+  - its own Docker containers
+  - its own `.env` settings file
+  - its own **PostgreSQL database**
+
+  Because of this, one client can never see another's data, and each client is backed up and restored on its own. The app is designed for one business (`BranchId` covers branches within that business), so no tenant code is needed.
+- Staging names use a dash (`abc-staging`) rather than a dot (`staging.abc`), so that one wildcard record covers them all.
+
+**DNS:**
+- One wildcard **A record**: `*.selease.com` → the production Droplet's IP address.
+- Each staging name points to the staging Droplet with its own A record.
+
+**Sharing Droplets:**
+- **One shared Caddy per Droplet.** Only one program can use the web ports (80/443). Caddy sends each address to the right app and gets HTTPS certificates automatically.
+- **Staging Droplet:** shared by every app's staging copy (SellEase clients and, if the owner wants, PTRP). If PTRP's Caddy is currently inside PTRP's own setup, it moves into the shared Caddy; that change is made in the PTRP project, not here. Staging holds only test data.
+- **Production Droplet:** shared by the SellEase clients' live copies while they are small. It is kept separate from staging. A client moves to its own Droplet once it grows or if it needs to be kept separate.
+- **Size:** each app (API, website and database) uses roughly 1–1.5 GB of memory. A **4 GB Droplet (about US$24/month)** holds 2–3 apps; 2 GB is too small.
+- **Trade-off:** apps on a shared Droplet go down together if the server has a problem. That is acceptable for staging. For production it is acceptable while clients are small.
+
+**When it is set up:**
+- Phase 2: staging for ABC.
+- Phase 5: ABC's production.
+
+Each new client later means a new `.env`, a new database, one Caddy entry and, for staging, one DNS record. The owner enters the secrets and DNS records by hand, following step-by-step instructions.
+
 ## Key design rules (apply in every phase)
 - **IDs and numbers:** every record has a hidden permanent ID plus a readable number (SO-000145, PO-000032, INV-…).
 - **No deleting finished records:** posted money records are corrected with reversal or adjustment entries, never deleted. An audit log records who changed what and when.
@@ -172,7 +203,7 @@ Work is committed directly to `main` for now, with no pull requests (owner's dec
 - Nightly `pg_dump` backup to Spaces, with a tested restore.
 - Uptime monitoring.
 - Security review.
-- Production domain (the owner checks that SellEase.app is available).
+- Production address `abc.selease.com` (see "Domain and hosting layout").
 - A short user guide for each role.
 
 *Checkpoint:* the owner approves the import result. Staff training, then switch-over from Excel.
