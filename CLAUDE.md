@@ -30,6 +30,8 @@ SellEase is a furniture showroom app for ABC Furniture in Pakistan. It covers th
 
 ## Commands
 - **API:** `cd api && dotnet test`, then `dotnet run --project src/SellEase.Api`
-- **Web:** `cd web && npm run lint && npm test && npm run build`, or `npm run dev`
+- **Web:** `cd web && npm run lint && npm test && npm run build && npm run e2e`, or `npm run dev`
+- **Prototype data:** sample data is in `web/src/data/sample.ts`; browser-only demo state is in `web/src/lib/prototype-store.ts`. Both are replaced by API calls from Phase 2.
+- **Screen text:** all text is in `web/messages/en.json`.
 - **Local database:** `docker compose -f deploy/docker-compose.dev.yml up -d` (port 5433)
 - **Next.js version:** this is Next.js 16. Read `web/AGENTS.md` and `web/node_modules/next/dist/docs/` before relying on memory.
