@@ -45,7 +45,7 @@ ABC Furniture (a showroom in Pakistan) runs on an Excel workbook (`Furniture_Sto
 - **All other software in the stack** (.NET, Next.js, Caddy, QuestPDF Community, ClosedXML, GitHub Actions on the free tier) is free.
 
 ## Domain and hosting layout (owner-confirmed 2026-11-26)
-The owner registered **selease.com**. Note the spelling: one "L", while the app's name has two ("SellEase").
+The owner registered **selease.com**. The domain is spelled with one "L", while the app's name ("SellEase") has two. The owner confirmed this spelling is intended.
 
 **Each furniture client gets its own subdomain:**
 - **ABC Furniture:** `abc.selease.com`. Its staging copy is at `abc-staging.selease.com`.
