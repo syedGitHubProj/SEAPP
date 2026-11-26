@@ -30,9 +30,16 @@ cd api && dotnet run --project src/SellEase.Api
 docker compose -f deploy/docker-compose.dev.yml up -d
 ```
 
+## Phase 1 prototype
+
+The website is a clickable prototype with sample data (no server, nothing saved except in your own browser).
+Use **Viewing as** at the top to switch between Salesman, Manager and Admin.
+
 ## Tests
 
 ```bash
 cd api && dotnet test
 cd web && npm run lint && npm test && npm run build
+cd web && npx playwright install chromium   # once
+cd web && npm run e2e   # browser tests at phone and desktop sizes (after build)
 ```

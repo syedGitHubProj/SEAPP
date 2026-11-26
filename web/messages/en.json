@@ -1,0 +1,400 @@
+{
+  "app": {
+    "name": "SellEase",
+    "business": "ABC Furniture"
+  },
+  "shell": {
+    "viewingAs": "Viewing as",
+    "mainNav": "Main menu",
+    "prototypeBanner": "Prototype with sample data. Nothing is saved to a server.",
+    "searchPlaceholder": "Search orders, customers or designs",
+    "notifications": "Notifications",
+    "close": "Close"
+  },
+  "nav": {
+    "home": "Home",
+    "catalog": "Catalogue",
+    "newSale": "New sale",
+    "orders": "Orders",
+    "customers": "Customers",
+    "factoryOrders": "Factory orders",
+    "receiving": "Receiving",
+    "deliveries": "Deliveries",
+    "expenses": "Expenses",
+    "cashBook": "Cash book",
+    "reports": "Reports",
+    "users": "Users & roles",
+    "more": "More"
+  },
+  "roles": {
+    "salesman": "Salesman",
+    "manager": "Manager",
+    "admin": "Admin",
+    "worker": "Worker",
+    "skilledWorker": "Skilled worker"
+  },
+  "common": {
+    "total": "Total",
+    "balance": "Balance",
+    "amount": "Amount",
+    "comingLater": "Coming in a later phase"
+  },
+  "orderStatus": {
+    "draft": "Draft",
+    "confirmed": "Confirmed",
+    "factoryOrdered": "Factory ordered",
+    "inProduction": "In production",
+    "received": "Received",
+    "readyForDelivery": "Ready for delivery",
+    "delivered": "Delivered",
+    "closed": "Closed",
+    "cancelled": "Cancelled"
+  },
+  "paymentStatus": {
+    "unpaid": "Unpaid",
+    "partial": "Part paid",
+    "paid": "Paid"
+  },
+  "poStatus": {
+    "ordered": "Ordered",
+    "inProduction": "In production",
+    "late": "Late",
+    "received": "Received"
+  },
+  "deliveryStatus": {
+    "scheduled": "Scheduled",
+    "outForDelivery": "Out for delivery",
+    "delivered": "Delivered"
+  },
+  "categories": {
+    "all": "All",
+    "royal": "Royal",
+    "sofa": "Sofa",
+    "bedroom": "Bedroom",
+    "dining": "Dining",
+    "living": "Living"
+  },
+  "materials": {
+    "velvet": "Velvet",
+    "leather": "Leather",
+    "fabric": "Fabric",
+    "sheesham": "Sheesham",
+    "teak": "Teak",
+    "deodar": "Deodar"
+  },
+  "accessories": {
+    "centerTable": "Centre table",
+    "sideTables": "Side tables (pair)",
+    "mattress": "Mattress",
+    "wardrobe": "Wardrobe",
+    "glassTop": "Glass top",
+    "sideboard": "Sideboard",
+    "cushions": "Extra cushions",
+    "storageBed": "Storage under bed",
+    "wallShelves": "Wall shelves"
+  },
+  "expenseCategories": {
+    "lunch": "Lunch",
+    "tea": "Tea",
+    "transport": "Transport",
+    "salaries": "Salaries & wages",
+    "rent": "Rent",
+    "utilities": "Utilities",
+    "repairs": "Repairs",
+    "misc": "Miscellaneous"
+  },
+  "dashboard": {
+    "viewAll": "View all",
+    "balance": "Balance",
+    "alerts": "Needs attention",
+    "salesman": {
+      "greeting": "Good afternoon, {name}",
+      "subtitle": "ABC Furniture · Salesman",
+      "newSale": "New sale",
+      "customers": "Customers",
+      "myOrders": "My orders",
+      "receivePayment": "Receive payment",
+      "browseDesigns": "Browse designs",
+      "recentOrders": "My recent orders"
+    },
+    "manager": {
+      "title": "Showroom manager",
+      "subtitle": "This week at a glance",
+      "salesWeek": "Sales (this week)",
+      "collections": "Collections",
+      "factoryOrders": "Open factory orders",
+      "pendingDeliveries": "Pending deliveries",
+      "approveOrders": "Approve orders",
+      "approveOrdersHint": "Review & confirm",
+      "factoryOrdersTile": "Factory orders",
+      "factoryOrdersHint": "Create & track",
+      "receiveStock": "Receive stock",
+      "receiveStockHint": "From factory",
+      "deliver": "Deliver to customer",
+      "deliverHint": "Dispatch & close",
+      "expenses": "Expenses",
+      "expensesHint": "Daily / weekly",
+      "cashInOut": "Cash in / out",
+      "cashInOutHint": "Record transactions",
+      "reports": "Reports",
+      "reportsHint": "Sales, P&L, balance sheet",
+      "todaySummary": "Today's summary",
+      "todaySummaryHint": "In / out overview",
+      "lateFactory": "{po} from {factory} is late (for {order}).",
+      "deliveryNoTeam": "Delivery for {order} has no team assigned yet.",
+      "expenseWaiting": "1 expense is waiting for your approval."
+    },
+    "admin": {
+      "title": "Owner overview",
+      "subtitle": "Finance and controls",
+      "netProfitMonth": "Net operating profit (month)",
+      "receivables": "Customers owe",
+      "payables": "Owed to factories",
+      "cashToday": "Cash in hand today",
+      "margins": "This month's margins",
+      "grossMargin": "Gross margin",
+      "operatingMargin": "Operating margin",
+      "activeUsers": "{count} active staff accounts",
+      "recentActivity": "Recent activity",
+      "allOrders": "All orders",
+      "manageUsers": "Manage users"
+    }
+  },
+  "audit": {
+    "orderCreated": "{who} created order {ref}",
+    "expenseApproved": "{who} approved expense {ref}",
+    "poIssued": "{who} issued factory order {ref}",
+    "userChanged": "{who} changed user {ref}"
+  },
+  "orderSteps": {
+    "label": "New order steps",
+    "selectDesigns": "Select designs",
+    "customise": "Customise",
+    "customerPayment": "Customer & payment",
+    "confirm": "Confirm"
+  },
+  "catalog": {
+    "title": "Furniture catalogue",
+    "subtitle": "Choose a design to customise for the customer.",
+    "search": "Search design, code or category",
+    "categories": "Categories",
+    "noResults": "No designs match your search.",
+    "selectDesign": "Select {name}",
+    "select": "Select",
+    "itemsInOrder": "{count, plural, one {# item} other {# items}} in this order",
+    "continue": "Continue →"
+  },
+  "customise": {
+    "back": "Back to catalogue",
+    "customise": "Customise",
+    "details": "Details",
+    "dimensions": "Dimensions",
+    "wood": "Wood",
+    "description": "Description",
+    "material": "Fabric / material",
+    "color": "Colour",
+    "colorOption": "Colour {n}",
+    "accessories": "Accessories (optional)",
+    "quantity": "Quantity",
+    "less": "Decrease quantity",
+    "more": "Increase quantity",
+    "totalPrice": "Total price",
+    "addToOrder": "Add to order"
+  },
+  "newOrder": {
+    "title": "New customer order",
+    "emptySubtitle": "Start by choosing a design.",
+    "empty": "This order has no items yet.",
+    "browseCatalog": "Choose from catalogue",
+    "removeItem": "Remove {name}",
+    "summaryTitle": "Order summary",
+    "selectedItems": "{count, plural, one {# item} other {# items}} selected",
+    "total": "Order total",
+    "nextCustomer": "Next: customer & payment",
+    "customer": "Customer",
+    "pickExisting": "Pick existing",
+    "addNewCustomer": "New customer",
+    "customerName": "Customer name",
+    "phone": "Phone",
+    "address": "Delivery address",
+    "chooseCustomer": "Choose customer",
+    "chooseCustomerPlaceholder": "Select a customer…",
+    "orderItems": "Order items ({count})",
+    "addMoreDesigns": "Add more designs",
+    "expectedDelivery": "Expected delivery",
+    "fillRequired": "Choose a customer and a delivery date to continue.",
+    "saveAndReceive": "Save & receive advance"
+  },
+  "advance": {
+    "title": "Receive advance",
+    "orderLabel": "Order {number}",
+    "noOrder": "There is no order waiting for an advance.",
+    "startOrder": "Start a new order",
+    "orderTotal": "Order total",
+    "advanceAmount": "Advance amount (Rs.)",
+    "tooMuch": "The advance can't be more than the order total.",
+    "paymentMethod": "Payment method",
+    "methods": {
+      "cash": "Cash",
+      "bank": "Bank transfer",
+      "other": "Other"
+    },
+    "notes": "Notes (optional)",
+    "advanceReceived": "Advance received",
+    "balance": "Balance",
+    "recordPayment": "Record payment"
+  },
+  "done": {
+    "title": "Order created successfully!",
+    "none": "No order has been created yet.",
+    "orderNo": "Order no.",
+    "customer": "Customer",
+    "items": "Items",
+    "total": "Total amount",
+    "advance": "Advance received",
+    "balance": "Balance",
+    "delivery": "Delivery (expected)",
+    "viewInvoice": "View invoice",
+    "invoiceLater": "Printable invoices arrive in Phase 4.",
+    "createAnother": "Create another order",
+    "goToOrders": "Go to orders"
+  },
+  "orders": {
+    "title": "All orders",
+    "myTitle": "My orders",
+    "subtitle": "Delivery progress and payment are tracked separately.",
+    "newOrder": "New order",
+    "number": "Order no.",
+    "customer": "Customer",
+    "items": "Items",
+    "delivery": "Delivery",
+    "payment": "Payment",
+    "status": "Status",
+    "note": "Orders you create in this demo appear at the top of this list (saved in this browser only)."
+  },
+  "customers": {
+    "title": "Customers",
+    "subtitle": "{count} customers",
+    "name": "Name",
+    "phone": "Phone",
+    "area": "Area",
+    "orders": "Orders",
+    "settled": "Settled"
+  },
+  "factoryOrders": {
+    "title": "Factory orders",
+    "subtitle": "Purchase orders placed with external factories.",
+    "new": "New factory order",
+    "owedToFactories": "Still owed to factories",
+    "number": "PO no.",
+    "factory": "Factory",
+    "forOrder": "For order",
+    "items": "Items",
+    "expected": "Expected",
+    "cost": "Cost",
+    "owed": "Owed",
+    "status": "Status",
+    "note": "Creating factory orders and recording factory payments arrive in Phases 3 and 4."
+  },
+  "receiving": {
+    "title": "Receiving",
+    "subtitle": "Inspect goods from factories and photograph their invoices.",
+    "awaiting": "Waiting to arrive",
+    "expected": "Expected",
+    "receive": "Receive",
+    "received": "Recently received",
+    "number": "Receipt no.",
+    "factory": "Factory",
+    "po": "PO no.",
+    "date": "Date",
+    "invoice": "Factory invoice",
+    "condition": "Condition",
+    "conditions": {
+      "good": "Good",
+      "minorDamage": "Minor damage"
+    },
+    "receivedBy": "Received by",
+    "note": "Receiving goods with photos of factory invoices arrives in Phase 3."
+  },
+  "deliveries": {
+    "title": "Deliveries",
+    "subtitle": "Scheduled deliveries, teams and balances to collect.",
+    "date": "Date",
+    "customer": "Customer",
+    "order": "Order",
+    "address": "Address",
+    "team": "Team",
+    "notAssigned": "Not assigned",
+    "collect": "To collect",
+    "status": "Status",
+    "note": "Scheduling, assigning workers and proof of delivery arrive in Phase 3."
+  },
+  "expenses": {
+    "title": "Expenses",
+    "subtitle": "Daily, weekly and monthly showroom expenses.",
+    "add": "Add expense",
+    "today": "Spent today",
+    "awaitingApproval": "Waiting for approval",
+    "date": "Date",
+    "description": "Description",
+    "category": "Category",
+    "enteredBy": "Entered by",
+    "approval": "Approval",
+    "approved": "Approved",
+    "pending": "Pending",
+    "note": "Adding and approving expenses arrives in Phase 4. Factory purchases are recorded through factory orders, not here."
+  },
+  "cashBook": {
+    "title": "Daily cash book",
+    "opening": "Opening cash",
+    "cashIn": "Cash in",
+    "cashOut": "Cash out",
+    "closing": "Closing cash",
+    "in": "Money in",
+    "out": "Money out",
+    "lines": {
+      "advances": "Customer advances",
+      "balanceCollections": "Customer balance collections",
+      "factoryPayments": "Factory payments",
+      "dailyExpenses": "Daily expenses",
+      "salaries": "Salaries"
+    },
+    "note": "Sample day from the requirements document. In Phase 4 cash, bank and card are kept separate and filterable by user and date."
+  },
+  "pnl": {
+    "title": "Profit & loss",
+    "period": "Period",
+    "periods": {
+      "week": "Week (Mon–Sun)",
+      "month": "Month",
+      "year": "Year",
+      "custom": "Custom dates"
+    },
+    "netSales": "Net sales revenue",
+    "cogs": "Cost of goods sold",
+    "grossProfit": "Gross profit",
+    "expenses": {
+      "salaries": "Salaries and wages",
+      "rentUtilities": "Rent and utilities",
+      "delivery": "Delivery and transport",
+      "refreshments": "Refreshments and other"
+    },
+    "netOperatingProfit": "Net operating profit",
+    "grossMargin": "Gross margin",
+    "operatingMargin": "Operating margin",
+    "note": "Sample month from the requirements document. Real reports, the balance sheet and PDF/Excel export arrive in Phase 4.",
+    "periodNote": "This prototype only has the sample month; other periods work in Phase 4."
+  },
+  "users": {
+    "title": "Users & roles",
+    "subtitle": "Staff accounts are created by the admin. Staff sign in with a username and password.",
+    "add": "Add user",
+    "name": "Name",
+    "username": "Username",
+    "role": "Role",
+    "status": "Status",
+    "active": "Active",
+    "inactive": "Inactive",
+    "note": "Real sign-in, roles and permissions arrive in Phase 2."
+  }
+}
