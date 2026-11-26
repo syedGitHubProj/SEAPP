@@ -10,9 +10,10 @@ import { customers, findDesign, nextOrderSequence } from "@/data/sample";
 import { balanceDue, formatOrderNumber } from "@/lib/orders";
 import {
   draftTotal,
+  listUnitPrice,
   placeOrder,
   useDraft,
-  usePlacedOrders,
+  usePlacedSalesOrders,
   type PaymentMethod,
 } from "@/lib/prototype-store";
 
@@ -24,9 +25,11 @@ const methods: { id: PaymentMethod; icon: typeof Banknote }[] = [
 
 export default function ReceiveAdvancePage() {
   const t = useTranslations("advance");
+  const tm = useTranslations("materials");
+  const tacc = useTranslations("accessories");
   const router = useRouter();
   const draft = useDraft();
-  const placed = usePlacedOrders();
+  const placed = usePlacedSalesOrders();
   const total = draftTotal(draft);
 
   const [amountText, setAmountText] = useState("");
@@ -48,15 +51,27 @@ export default function ReceiveAdvancePage() {
 
   const record = () => {
     const customerName = draft.newCustomer?.name ?? customers.find((c) => c.id === draft.customerId)?.name ?? "";
+    // The sales order keeps a snapshot of each line: design, options and agreed price.
     placeOrder({
       number: orderNumber,
-      customerName,
-      items: draft.items.map((i) => findDesign(i.designCode)?.name ?? i.designCode).join(", "),
-      total,
-      advance: amount,
-      method,
+      customer: customerName,
+      date: new Date().toISOString().slice(0, 10),
+      lines: draft.items.map((i, index) => {
+        const design = findDesign(i.designCode);
+        const options = [tm(i.materialId), ...i.accessoryIds.map((id) => tacc(id))].join(", ");
+        return {
+          id: String(index + 1),
+          designCode: i.designCode,
+          description: `${design?.name ?? i.designCode} — ${options}`,
+          quantity: i.quantity,
+          listUnitPrice: listUnitPrice(i),
+          agreedUnitPrice: i.agreedUnitPrice,
+        };
+      }),
+      paid: amount,
+      status: "confirmed",
       deliveryDate: draft.deliveryDate,
-      createdAt: new Date().toISOString(),
+      salesman: "Ali",
     });
     router.push("/orders/new/done");
   };

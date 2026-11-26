@@ -5,13 +5,15 @@ import { useFormatter, useTranslations } from "next-intl";
 import { ResponsiveTable } from "@/components/ResponsiveTable";
 import { PoStatusBadge } from "@/components/StatusBadge";
 import { Badge, Button, Card, PageHeader, PrototypeNote } from "@/components/ui";
-import { goodsReceipts, purchaseOrders } from "@/data/sample";
+import { goodsReceipts } from "@/data/sample";
+import { usePurchaseOrders } from "@/lib/prototype-store";
+import { linkedSalesOrders } from "@/lib/purchasing";
 
 export default function ReceivingPage() {
   const t = useTranslations("receiving");
   const tc = useTranslations("common");
   const format = useFormatter();
-  const awaiting = purchaseOrders.filter((p) => p.status !== "received");
+  const awaiting = usePurchaseOrders().filter((p) => p.status !== "received");
   const date = (d: string) => format.dateTime(new Date(`${d}T00:00:00`), { dateStyle: "medium" });
 
   return (
@@ -24,8 +26,8 @@ export default function ReceivingPage() {
           <li key={p.number}>
             <Card className="flex items-center justify-between gap-3 p-4">
               <div className="min-w-0">
-                <div className="font-medium">{p.items}</div>
-                <div className="text-sm text-zinc-500">{p.number} · {p.factory}</div>
+                <div className="font-medium">{p.lines.map((l) => l.description.split(" — ")[0]).join(", ")}</div>
+                <div className="text-sm text-zinc-500">{p.number} · {p.factory} · {linkedSalesOrders(p.lines).join(", ")}</div>
                 <div className="mt-1 flex items-center gap-2 text-xs text-zinc-500">
                   {t("expected")}: {date(p.expected)} <PoStatusBadge status={p.status} />
                 </div>

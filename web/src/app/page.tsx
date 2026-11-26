@@ -29,14 +29,13 @@ import {
   customers,
   designs,
   monthlyPnl,
-  purchaseOrders,
-  salesOrders,
   staffUsers,
   weekKpis,
 } from "@/data/sample";
 import { closingCash, profitAndLoss } from "@/lib/finance";
 import { formatMoney } from "@/lib/money";
-import { useRole } from "@/lib/prototype-store";
+import { usePurchaseOrders, useRole, useSalesOrders } from "@/lib/prototype-store";
+import { linkedSalesOrders, purchaseOrderTotal, salesOrderTotal } from "@/lib/purchasing";
 
 function ActionTile({ href, icon, title, hint, tone }: { href: string; icon: ReactNode; title: string; hint?: string; tone: string }) {
   return (
@@ -54,7 +53,7 @@ function ActionTile({ href, icon, title, hint, tone }: { href: string; icon: Rea
 function SalesmanHome() {
   const t = useTranslations("dashboard");
   const featured = designs.slice(0, 6);
-  const myOrders = salesOrders.filter((o) => o.salesman === "Ali").slice(0, 3);
+  const myOrders = useSalesOrders().filter((o) => o.salesman === "Ali").slice(0, 3);
   return (
     <>
       <PageHeader title={t("salesman.greeting", { name: "Ali" })} subtitle={t("salesman.subtitle")} />
@@ -89,11 +88,11 @@ function SalesmanHome() {
             <div key={o.number} className="flex items-center justify-between gap-3 p-4">
               <div className="min-w-0">
                 <div className="font-medium">{o.customer}</div>
-                <div className="truncate text-sm text-zinc-500">{o.number} · {o.items}</div>
+                <div className="truncate text-sm text-zinc-500">{o.number} · {o.lines.map((l) => l.description.split(" — ")[0]).join(", ")}</div>
               </div>
               <div className="text-end">
                 <OrderStatusBadge status={o.status} />
-                <div className="mt-1 text-xs text-zinc-500">{t("balance")}: <Money amount={o.total - o.paid} /></div>
+                <div className="mt-1 text-xs text-zinc-500">{t("balance")}: <Money amount={salesOrderTotal(o.lines) - o.paid} /></div>
               </div>
             </div>
           ))}
@@ -105,7 +104,7 @@ function SalesmanHome() {
 
 function ManagerDashboard() {
   const t = useTranslations("dashboard");
-  const late = purchaseOrders.filter((p) => p.status === "late");
+  const late = usePurchaseOrders().filter((p) => p.status === "late");
   return (
     <>
       <PageHeader title={t("manager.title")} subtitle={t("manager.subtitle")} />
@@ -133,7 +132,7 @@ function ManagerDashboard() {
           {late.map((p) => (
             <div key={p.number} className="flex items-start gap-3 p-4">
               <AlertTriangle className="mt-0.5 size-5 shrink-0 text-red-600" />
-              <p className="text-sm">{t("manager.lateFactory", { po: p.number, factory: p.factory, order: p.forOrder })}</p>
+              <p className="text-sm">{t("manager.lateFactory", { po: p.number, factory: p.factory, order: linkedSalesOrders(p.lines).join(", ") })}</p>
             </div>
           ))}
           <div className="flex items-start gap-3 p-4">
@@ -155,7 +154,7 @@ function AdminDashboard() {
   const ta = useTranslations("audit");
   const pnl = profitAndLoss(monthlyPnl);
   const receivables = customers.reduce((s, c) => s + c.balance, 0);
-  const payables = purchaseOrders.filter((p) => p.status !== "received").reduce((s, p) => s + p.cost - p.paid, 0);
+  const payables = usePurchaseOrders().reduce((s, p) => s + purchaseOrderTotal(p.lines) - p.paid, 0);
   const cash = closingCash(cashBook.opening, cashBook.lines);
   return (
     <>

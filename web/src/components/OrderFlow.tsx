@@ -5,8 +5,7 @@ import { useTranslations } from "next-intl";
 import { DesignArt } from "@/components/DesignArt";
 import { Card, LinkButton, Money } from "@/components/ui";
 import { findDesign } from "@/data/sample";
-import { lineTotal } from "@/lib/orders";
-import { draftTotal, removeDraftItem, toOrderLine, useDraft, type DraftItem } from "@/lib/prototype-store";
+import { draftItemTotal, draftTotal, listUnitPrice, removeDraftItem, useDraft, type DraftItem } from "@/lib/prototype-store";
 
 const steps = ["selectDesigns", "customise", "customerPayment", "confirm"] as const;
 
@@ -55,7 +54,14 @@ export function DraftItemRow({ item, editable = true }: { item: DraftItem; edita
           {design.code} · {extras}
           {item.quantity > 1 && ` · ×${item.quantity}`}
         </div>
-        <Money amount={lineTotal(toOrderLine(item))} className="text-sm font-semibold" />
+        <div className="flex items-baseline gap-2">
+          <Money amount={draftItemTotal(item)} className="text-sm font-semibold" />
+          {item.agreedUnitPrice < listUnitPrice(item) && (
+            <s className="text-xs text-zinc-400">
+              <Money amount={listUnitPrice(item) * item.quantity} />
+            </s>
+          )}
+        </div>
       </div>
       {editable && (
         <div className="flex shrink-0">

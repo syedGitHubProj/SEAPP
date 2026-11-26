@@ -2,12 +2,21 @@
 
 /**
  * Browser-only state for the clickable prototype: who you are "viewing as",
- * the order being built, and orders placed during the demo.
+ * the sales order being built, and sales/purchase orders created during the demo.
  * Kept in localStorage so a page refresh doesn't lose the demo. Replaced by the API in Phase 2+.
  */
-import { useSyncExternalStore } from "react";
-import { findDesign, type Role } from "@/data/sample";
-import { orderTotal, type OrderLine } from "@/lib/orders";
+import { useMemo, useSyncExternalStore } from "react";
+import {
+  findDesign,
+  purchaseOrders as samplePurchaseOrders,
+  salesOrders as sampleSalesOrders,
+  type FulfilmentStatus,
+  type PurchaseOrder,
+  type Role,
+  type SalesOrder,
+} from "@/data/sample";
+import { type OrderLine, unitPrice } from "@/lib/orders";
+import { findPoLine } from "@/lib/purchasing";
 
 export interface DraftItem {
   id: string;
@@ -16,6 +25,8 @@ export interface DraftItem {
   color: string;
   accessoryIds: string[];
   quantity: number;
+  /** Price per piece agreed with the customer (may be below the catalogue price). */
+  agreedUnitPrice: number;
 }
 
 export interface NewCustomer {
@@ -33,27 +44,19 @@ export interface Draft {
 
 export type PaymentMethod = "cash" | "bank" | "other";
 
-export interface PlacedOrder {
-  number: string;
-  customerName: string;
-  items: string;
-  total: number;
-  advance: number;
-  method: PaymentMethod;
-  deliveryDate: string;
-  createdAt: string;
-}
-
 interface State {
   role: Role;
   draft: Draft;
-  placed: PlacedOrder[];
+  /** Sales orders created in this demo (newest first). */
+  placed: SalesOrder[];
+  /** Purchase orders created in this demo (newest first). */
+  purchases: PurchaseOrder[];
 }
 
-const STORAGE_KEY = "sellease-prototype-v1";
+const STORAGE_KEY = "sellease-prototype-v2";
 
 const emptyDraft: Draft = { items: [], customerId: null, newCustomer: null, deliveryDate: "" };
-const initialState: State = { role: "salesman", draft: emptyDraft, placed: [] };
+const initialState: State = { role: "salesman", draft: emptyDraft, placed: [], purchases: [] };
 
 function load(): State {
   if (typeof window === "undefined") return initialState;
@@ -98,7 +101,34 @@ function useStore<T>(select: (s: State) => T): T {
 
 export const useRole = () => useStore((s) => s.role);
 export const useDraft = () => useStore((s) => s.draft);
-export const usePlacedOrders = () => useStore((s) => s.placed);
+/** Only the sales orders created in this demo (newest first). */
+export const usePlacedSalesOrders = () => useStore((s) => s.placed);
+/** Only the purchase orders created in this demo (newest first). */
+export const useCreatedPurchaseOrders = () => useStore((s) => s.purchases);
+
+/** Purchase orders: demo-created first, then the sample ones. */
+export function usePurchaseOrders(): PurchaseOrder[] {
+  const created = useStore((s) => s.purchases);
+  return useMemo(() => [...created, ...samplePurchaseOrders], [created]);
+}
+
+/**
+ * Sales orders: demo-created first, then the sample ones. A confirmed order
+ * shows as "Factory ordered" once any of its lines is on a purchase order.
+ */
+export function useSalesOrders(): SalesOrder[] {
+  const placed = useStore((s) => s.placed);
+  const pos = usePurchaseOrders();
+  return useMemo(
+    () =>
+      [...placed, ...sampleSalesOrders].map((so) => {
+        const ordered = so.lines.some((l) => findPoLine(so.number, l.id, pos));
+        const status: FulfilmentStatus = so.status === "confirmed" && ordered ? "factoryOrdered" : so.status;
+        return status === so.status ? so : { ...so, status };
+      }),
+    [placed, pos],
+  );
+}
 
 export function setRole(role: Role) {
   update((s) => ({ ...s, role }));
@@ -117,16 +147,16 @@ export function updateDraft(patch: Partial<Draft>) {
   update((s) => ({ ...s, draft: { ...s.draft, ...patch } }));
 }
 
-export function placeOrder(order: PlacedOrder) {
+export function placeOrder(order: SalesOrder) {
   update((s) => ({ ...s, placed: [order, ...s.placed], draft: emptyDraft }));
 }
 
-export function clearDraft() {
-  update((s) => ({ ...s, draft: emptyDraft }));
+export function createPurchaseOrder(po: PurchaseOrder) {
+  update((s) => ({ ...s, purchases: [po, ...s.purchases] }));
 }
 
-/** Converts a draft item into priced order-line figures using the sample catalogue. */
-export function toOrderLine(item: DraftItem): OrderLine {
+/** Catalogue price figures for a draft item (before any agreed discount). */
+export function toOrderLine(item: Omit<DraftItem, "id" | "agreedUnitPrice">): OrderLine {
   const design = findDesign(item.designCode);
   if (!design) return { basePrice: 0, materialSurcharge: 0, accessories: [], quantity: item.quantity };
   return {
@@ -137,6 +167,8 @@ export function toOrderLine(item: DraftItem): OrderLine {
   };
 }
 
-export function draftTotal(draft: Draft): number {
-  return orderTotal(draft.items.map(toOrderLine));
-}
+export const listUnitPrice = (item: Omit<DraftItem, "id" | "agreedUnitPrice">) => unitPrice(toOrderLine(item));
+
+export const draftItemTotal = (item: DraftItem) => item.agreedUnitPrice * item.quantity;
+
+export const draftTotal = (draft: Draft) => draft.items.reduce((sum, i) => sum + draftItemTotal(i), 0);

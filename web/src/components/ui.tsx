@@ -100,7 +100,7 @@ export function StatCard({
 }
 
 export function Money({ amount, className }: { amount: number; className?: string }) {
-  return <span className={cx("tabular-nums", className)}>{formatMoney(amount)}</span>;
+  return <span className={cx("tabular-nums whitespace-nowrap", className)}>{formatMoney(amount)}</span>;
 }
 
 export function PrototypeNote({ children }: { children: ReactNode }) {

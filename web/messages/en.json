@@ -199,7 +199,11 @@
     "less": "Decrease quantity",
     "more": "Increase quantity",
     "totalPrice": "Total price",
-    "addToOrder": "Add to order"
+    "addToOrder": "Add to order",
+    "catalogPrice": "Catalogue price (per piece)",
+    "agreedPrice": "Agreed selling price (per piece)",
+    "agreedPriceHint": "The price agreed with the customer. Change it if you give a discount.",
+    "discount": "Discount from catalogue"
   },
   "newOrder": {
     "title": "New customer order",
@@ -257,12 +261,15 @@
     "viewInvoice": "View invoice",
     "invoiceLater": "Printable invoices arrive in Phase 4.",
     "createAnother": "Create another order",
-    "goToOrders": "Go to orders"
+    "goToOrders": "Go to orders",
+    "nextStepPo": "Next step: order this furniture from a factory. The factory order is linked to this sales order.",
+    "createPo": "Create factory order",
+    "viewOrder": "View sales order"
   },
   "orders": {
     "title": "All orders",
     "myTitle": "My orders",
-    "subtitle": "Delivery progress and payment are tracked separately.",
+    "subtitle": "Customer sales orders. Delivery progress and payment are tracked separately.",
     "newOrder": "New order",
     "number": "Order no.",
     "customer": "Customer",
@@ -270,7 +277,7 @@
     "delivery": "Delivery",
     "payment": "Payment",
     "status": "Status",
-    "note": "Orders you create in this demo appear at the top of this list (saved in this browser only)."
+    "note": "Tap an order number to see its lines and factory orders. Orders you create in this demo appear at the top (saved in this browser only)."
   },
   "customers": {
     "title": "Customers",
@@ -283,7 +290,7 @@
   },
   "factoryOrders": {
     "title": "Factory orders",
-    "subtitle": "Purchase orders placed with external factories.",
+    "subtitle": "Purchase orders placed with factories. Each one is linked to the sales order it is made for.",
     "new": "New factory order",
     "owedToFactories": "Still owed to factories",
     "number": "PO no.",
@@ -294,7 +301,7 @@
     "cost": "Cost",
     "owed": "Owed",
     "status": "Status",
-    "note": "Creating factory orders and recording factory payments arrive in Phases 3 and 4."
+    "note": "Factory orders you create in this demo appear at the top. Recording factory payments arrives in Phase 4."
   },
   "receiving": {
     "title": "Receiving",
@@ -396,5 +403,49 @@
     "active": "Active",
     "inactive": "Inactive",
     "note": "Real sign-in, roles and permissions arrive in Phase 2."
+  },
+  "orderDetail": {
+    "notFound": "Sales order {number} was not found.",
+    "backToOrders": "Back to orders",
+    "title": "Sales order {number}",
+    "subtitle": "{customer} · {date} · Salesman: {salesman}",
+    "createPo": "Create factory order",
+    "status": "Order status",
+    "payment": "Payment",
+    "delivery": "Delivery promised",
+    "lines": "Items sold",
+    "item": "Item",
+    "qty": "Qty",
+    "agreedPrice": "Agreed price",
+    "factoryOrder": "Factory order",
+    "notOrdered": "Not ordered yet",
+    "factoryCost": "Factory cost",
+    "discount": "Discount given",
+    "orderTotal": "Order total",
+    "received": "Received from customer",
+    "factoryCostTotal": "Factory cost so far",
+    "grossMargin": "Margin before other costs",
+    "marginPending": "After all items are ordered"
+  },
+  "newPo": {
+    "back": "Back to factory orders",
+    "title": "New factory order",
+    "subtitle": "Purchase order {number}, made against a customer's sales order",
+    "salesOrder": "For sales order",
+    "chooseSalesOrder": "Select a sales order…",
+    "nothingToOrder": "Every sales order already has all its items on factory orders.",
+    "linesTitle": "Items to order from this factory",
+    "linesHint": "Untick items that will go to a different factory; you can order them separately.",
+    "qtyAndSale": "Qty {qty} · sold for",
+    "unitCost": "Factory cost per piece (Rs.) *",
+    "unitCostFor": "Factory cost per piece for {item}",
+    "factory": "Factory",
+    "chooseFactory": "Select a factory…",
+    "expected": "Expected completion",
+    "totalCost": "Total factory cost",
+    "marginOnLines": "Margin on these items",
+    "fillRequired": "Choose a sales order, at least one item with its factory cost, a factory and a completion date.",
+    "create": "Create factory order",
+    "alreadyOrdered": "All items on {number} are already on factory orders. Choose another sales order."
   }
 }

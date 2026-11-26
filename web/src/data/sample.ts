@@ -1,3 +1,5 @@
+import type { PurchaseOrderLine, SalesOrderLine } from "@/lib/purchasing";
+
 /**
  * Sample data for the Phase 1 clickable prototype only.
  * Replaced by real API data from Phase 2 onwards. Names and numbers are made up.
@@ -125,7 +127,7 @@ export const customers: Customer[] = [
   { id: "c1", name: "Mr. Imran Khan", phone: "0321-4567890", area: "DHA Phase 5", orders: 2, balance: 148_000 },
   { id: "c2", name: "Mrs. Ayesha Siddiqui", phone: "0300-1122334", area: "Gulberg III", orders: 1, balance: 0 },
   { id: "c3", name: "Mr. Bilal Ahmed", phone: "0333-9876543", area: "Model Town", orders: 3, balance: 65_000 },
-  { id: "c4", name: "Mrs. Sana Raza", phone: "0345-2233445", area: "Johar Town", orders: 1, balance: 120_000 },
+  { id: "c4", name: "Mrs. Sana Raza", phone: "0345-2233445", area: "Johar Town", orders: 1, balance: 115_000 },
   { id: "c5", name: "Mr. Usman Tariq", phone: "0312-5566778", area: "Bahria Town", orders: 1, balance: 0 },
   { id: "c6", name: "Mr. Hamza Qureshi", phone: "0301-6655443", area: "Cantt", orders: 2, balance: 210_000 },
 ];
@@ -134,50 +136,73 @@ export type FulfilmentStatus =
   | "draft" | "confirmed" | "factoryOrdered" | "inProduction" | "received"
   | "readyForDelivery" | "delivered" | "closed" | "cancelled";
 
-export interface SalesOrderSummary {
+export interface SalesOrder {
   number: string;
   customer: string;
   date: string;
-  items: string;
-  total: number;
+  lines: SalesOrderLine[];
   paid: number;
   status: FulfilmentStatus;
   deliveryDate: string;
   salesman: string;
 }
 
-export const salesOrders: SalesOrderSummary[] = [
-  { number: "SO-000144", customer: "Mrs. Sana Raza", date: "2026-11-24", items: "Luxury Bedroom Set", total: 245_000, paid: 125_000, status: "confirmed", deliveryDate: "2026-12-20", salesman: "Ali" },
-  { number: "SO-000143", customer: "Mr. Hamza Qureshi", date: "2026-11-22", items: "Royal Dining (8 seats)", total: 342_000, paid: 132_000, status: "factoryOrdered", deliveryDate: "2026-12-28", salesman: "Ali" },
-  { number: "SO-000142", customer: "Mr. Bilal Ahmed", date: "2026-11-18", items: "Modern Sofa Set, Coffee Table Set", total: 167_000, paid: 102_000, status: "inProduction", deliveryDate: "2026-12-10", salesman: "Kashif" },
-  { number: "SO-000141", customer: "Mr. Imran Khan", date: "2026-11-12", items: "Royal Sofa Set", total: 228_000, paid: 80_000, status: "inProduction", deliveryDate: "2026-12-05", salesman: "Ali" },
-  { number: "SO-000140", customer: "Mrs. Ayesha Siddiqui", date: "2026-11-05", items: "Classic Dining Set", total: 165_000, paid: 165_000, status: "readyForDelivery", deliveryDate: "2026-11-27", salesman: "Kashif" },
-  { number: "SO-000139", customer: "Mr. Usman Tariq", date: "2026-10-28", items: "L-Shape Corner Sofa", total: 158_000, paid: 158_000, status: "delivered", deliveryDate: "2026-11-21", salesman: "Ali" },
-  { number: "SO-000138", customer: "Mr. Bilal Ahmed", date: "2026-10-20", items: "Classic Bed", total: 98_000, paid: 98_000, status: "closed", deliveryDate: "2026-11-15", salesman: "Kashif" },
+const line = (id: string, designCode: string, description: string, listUnitPrice: number, agreedUnitPrice = listUnitPrice, quantity = 1): SalesOrderLine =>
+  ({ id, designCode, description, quantity, listUnitPrice, agreedUnitPrice });
+
+export const salesOrders: SalesOrder[] = [
+  { number: "SO-000144", customer: "Mrs. Sana Raza", date: "2026-11-24", paid: 125_000, status: "confirmed", deliveryDate: "2026-12-20", salesman: "Ali",
+    lines: [line("1", "BD-204", "Luxury Bedroom Set — Sheesham", 245_000, 240_000)] },
+  { number: "SO-000143", customer: "Mr. Hamza Qureshi", date: "2026-11-22", paid: 132_000, status: "factoryOrdered", deliveryDate: "2026-12-28", salesman: "Ali",
+    lines: [line("1", "RY-103", "Royal Dining (8 seats) — Teak, glass top", 342_000)] },
+  { number: "SO-000142", customer: "Mr. Bilal Ahmed", date: "2026-11-18", paid: 102_000, status: "inProduction", deliveryDate: "2026-12-10", salesman: "Kashif",
+    lines: [line("1", "SF-310", "Modern Sofa Set — Velvet", 125_000), line("2", "LV-402", "Coffee Table Set — Teak", 42_000)] },
+  { number: "SO-000141", customer: "Mr. Imran Khan", date: "2026-11-12", paid: 80_000, status: "inProduction", deliveryDate: "2026-12-05", salesman: "Ali",
+    lines: [line("1", "RY-101", "Royal Sofa Set — Velvet, centre table, side tables", 228_000)] },
+  { number: "SO-000140", customer: "Mrs. Ayesha Siddiqui", date: "2026-11-05", paid: 165_000, status: "readyForDelivery", deliveryDate: "2026-11-27", salesman: "Kashif",
+    lines: [line("1", "DN-108", "Classic Dining Set — Sheesham", 165_000)] },
+  { number: "SO-000139", customer: "Mr. Usman Tariq", date: "2026-10-28", paid: 158_000, status: "delivered", deliveryDate: "2026-11-21", salesman: "Ali",
+    lines: [line("1", "SF-322", "L-Shape Corner Sofa — Fabric", 158_000)] },
+  { number: "SO-000138", customer: "Mr. Bilal Ahmed", date: "2026-10-20", paid: 98_000, status: "closed", deliveryDate: "2026-11-15", salesman: "Kashif",
+    lines: [line("1", "BD-215", "Classic Bed — Kikar", 98_000)] },
 ];
 
-/** The next order number the prototype hands out. */
+/** The next order numbers the prototype hands out. */
 export const nextOrderSequence = 145;
+export const nextPurchaseOrderSequence = 37;
+
+export const factories = ["Chiniot Royal Works", "Lahore Woodcraft", "Gujrat Furniture House"];
 
 export type PurchaseOrderStatus = "ordered" | "inProduction" | "late" | "received";
 
 export interface PurchaseOrder {
   number: string;
   factory: string;
-  forOrder: string;
-  items: string;
-  cost: number;
+  date: string;
+  lines: PurchaseOrderLine[];
   paid: number;
   expected: string;
   status: PurchaseOrderStatus;
 }
 
+const poLine = (soNumber: string, soLineId: string, description: string, unitCost: number, quantity = 1): PurchaseOrderLine =>
+  ({ soNumber, soLineId, description, quantity, unitCost });
+
 export const purchaseOrders: PurchaseOrder[] = [
-  { number: "PO-000036", factory: "Chiniot Royal Works", forOrder: "SO-000143", items: "Royal Dining (8 seats)", cost: 205_000, paid: 60_000, expected: "2026-12-18", status: "ordered" },
-  { number: "PO-000035", factory: "Lahore Woodcraft", forOrder: "SO-000142", items: "Modern Sofa Set", cost: 78_000, paid: 30_000, expected: "2026-12-02", status: "inProduction" },
-  { number: "PO-000034", factory: "Lahore Woodcraft", forOrder: "SO-000142", items: "Coffee Table Set", cost: 24_000, paid: 0, expected: "2026-12-02", status: "inProduction" },
-  { number: "PO-000033", factory: "Chiniot Royal Works", forOrder: "SO-000141", items: "Royal Sofa Set + tables", cost: 140_000, paid: 50_000, expected: "2026-11-22", status: "late" },
-  { number: "PO-000032", factory: "Gujrat Furniture House", forOrder: "SO-000140", items: "Classic Dining Set", cost: 95_000, paid: 95_000, expected: "2026-11-20", status: "received" },
+  { number: "PO-000036", factory: "Chiniot Royal Works", date: "2026-11-23", paid: 60_000, expected: "2026-12-18", status: "ordered",
+    lines: [poLine("SO-000143", "1", "Royal Dining (8 seats) — Teak, glass top", 205_000)] },
+  { number: "PO-000035", factory: "Lahore Woodcraft", date: "2026-11-19", paid: 30_000, expected: "2026-12-02", status: "inProduction",
+    lines: [poLine("SO-000142", "1", "Modern Sofa Set — Velvet", 78_000)] },
+  { number: "PO-000034", factory: "Lahore Woodcraft", date: "2026-11-19", paid: 0, expected: "2026-12-02", status: "inProduction",
+    lines: [poLine("SO-000142", "2", "Coffee Table Set — Teak", 24_000)] },
+  { number: "PO-000033", factory: "Chiniot Royal Works", date: "2026-11-13", paid: 50_000, expected: "2026-11-22", status: "late",
+    lines: [poLine("SO-000141", "1", "Royal Sofa Set — Velvet, centre table, side tables", 140_000)] },
+  { number: "PO-000032", factory: "Gujrat Furniture House", date: "2026-11-06", paid: 95_000, expected: "2026-11-20", status: "received",
+    lines: [poLine("SO-000140", "1", "Classic Dining Set — Sheesham", 95_000)] },
+  { number: "PO-000030", factory: "Lahore Woodcraft", date: "2026-10-29", paid: 98_000, expected: "2026-11-13", status: "received",
+    lines: [poLine("SO-000139", "1", "L-Shape Corner Sofa — Fabric", 98_000)] },
+  { number: "PO-000029", factory: "Chiniot Royal Works", date: "2026-10-21", paid: 60_000, expected: "2026-11-07", status: "received",
+    lines: [poLine("SO-000138", "1", "Classic Bed — Kikar", 60_000)] },
 ];
 
 export interface GoodsReceipt {

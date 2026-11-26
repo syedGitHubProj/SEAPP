@@ -29,3 +29,6 @@ playwright-report/
 test-results/
 *.tsbuildinfo
 next-env.d.ts
+
+# Office temporary lock files (created while a document is open)
+~$*

@@ -42,7 +42,7 @@ export const navItems: NavItem[] = [
   { href: "/orders/new", key: "newSale", icon: Plus, roles: ["salesman", "manager"] },
   { href: "/orders", key: "orders", icon: ClipboardList, roles: ALL },
   { href: "/customers", key: "customers", icon: Users, roles: ALL },
-  { href: "/factory-orders", key: "factoryOrders", icon: Factory, roles: MGMT },
+  { href: "/factory-orders", key: "factoryOrders", icon: Factory, roles: ALL },
   { href: "/receiving", key: "receiving", icon: PackageCheck, roles: MGMT },
   { href: "/deliveries", key: "deliveries", icon: Truck, roles: MGMT },
   { href: "/expenses", key: "expenses", icon: Receipt, roles: MGMT },

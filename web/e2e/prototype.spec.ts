@@ -4,17 +4,20 @@ async function viewAs(page: Page, role: "Salesman" | "Manager" | "Admin") {
   await page.getByRole("combobox", { name: "Viewing as" }).first().selectOption({ label: role });
 }
 
-test("salesman creates an order and records an advance", async ({ page }) => {
+test("salesman creates a sales order, then a linked factory (purchase) order", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: /Good afternoon, Ali/ })).toBeVisible();
 
+  // Sales order: design, options and an agreed price below the catalogue price.
   await page.goto("/catalog");
   await page.getByRole("link", { name: "Select Royal Sofa Set" }).click();
   await expect(page.getByRole("heading", { name: "Royal Sofa Set" })).toBeVisible();
-
   await page.getByRole("checkbox", { name: "Centre table" }).check();
   await page.getByRole("checkbox", { name: "Side tables (pair)" }).check();
-  await expect(page.getByText("Rs. 228,000").last()).toBeVisible();
+  const agreed = page.getByLabel(/Agreed selling price/);
+  await expect(agreed).toHaveValue("228000");
+  await agreed.fill("220000");
+  await expect(page.getByText("Discount from catalogue")).toBeVisible();
   await page.getByRole("button", { name: "Add to order" }).click();
 
   await expect(page).toHaveURL(/\/orders\/new$/);
@@ -26,14 +29,45 @@ test("salesman creates an order and records an advance", async ({ page }) => {
 
   await expect(page.getByRole("heading", { name: "Receive advance" })).toBeVisible();
   await page.getByLabel(/Advance amount/).fill("80000");
-  await expect(page.getByText("Rs. 148,000")).toBeVisible();
+  await expect(page.getByText("Rs. 140,000")).toBeVisible();
   await page.getByRole("button", { name: "Record payment" }).click();
 
   await expect(page.getByRole("heading", { name: "Order created successfully!" })).toBeVisible();
   await expect(page.getByText("SO-000145")).toBeVisible();
 
-  await page.getByRole("link", { name: "Go to orders" }).click();
-  await expect(page.getByText("SO-000145").filter({ visible: true }).first()).toBeVisible();
+  // Purchase order against that sales order.
+  await page.getByRole("link", { name: "Create factory order" }).click();
+  await expect(page.getByRole("heading", { name: "New factory order" })).toBeVisible();
+  await expect(page.getByRole("combobox", { name: /For sales order/ })).toHaveValue("SO-000145");
+  const create = page.getByRole("button", { name: "Create factory order" });
+  await expect(create).toBeDisabled();
+  await page.getByLabel(/Factory cost per piece for Royal Sofa Set/).fill("140000");
+  await page.getByRole("combobox", { name: /^Factory/ }).selectOption("Chiniot Royal Works");
+  await page.getByLabel(/Expected completion/).fill("2026-12-10");
+  await expect(page.getByText("Rs. 80,000").first()).toBeVisible(); // margin on these items
+  await create.click();
+
+  // Back on the sales order: the line now shows its factory order and cost.
+  await expect(page.getByRole("heading", { name: "Sales order SO-000145" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "PO-000037" }).filter({ visible: true })).toBeVisible();
+  await expect(page.getByText("Factory ordered").filter({ visible: true }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "Create factory order" })).toHaveCount(0);
+
+  // The factory orders list shows the link back to the sales order.
+  await page.goto("/factory-orders");
+  await expect(page.getByText("PO-000037").filter({ visible: true }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "SO-000145" }).filter({ visible: true }).first()).toBeVisible();
+});
+
+test("an existing sales order can be split across factories", async ({ page }) => {
+  await page.goto("/factory-orders/new?so=SO-000144");
+  await expect(page.getByRole("combobox", { name: /For sales order/ })).toHaveValue("SO-000144");
+  await page.getByLabel(/Factory cost per piece for Luxury Bedroom Set/).fill("150000");
+  await page.getByRole("combobox", { name: /^Factory/ }).selectOption("Gujrat Furniture House");
+  await page.getByLabel(/Expected completion/).fill("2026-12-15");
+  await page.getByRole("button", { name: "Create factory order" }).click();
+  await expect(page.getByRole("heading", { name: "Sales order SO-000144" })).toBeVisible();
+  await expect(page.getByText("Rs. 90,000").filter({ visible: true }).first()).toBeVisible(); // 240,000 - 150,000
 });
 
 test("advance cannot be more than the order total", async ({ page }) => {

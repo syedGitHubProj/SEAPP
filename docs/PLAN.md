@@ -47,6 +47,11 @@ ABC Furniture (a showroom in Pakistan) runs on an Excel workbook (`Furniture_Sto
 ## Key design rules (apply in every phase)
 - **IDs and numbers:** every record has a hidden permanent ID plus a readable number (SO-000145, PO-000032, INV-…).
 - **No deleting finished records:** posted money records are corrected with reversal or adjustment entries, never deleted. An audit log records who changed what and when.
+- **Sales orders and purchase orders are separate records with separate flows.**
+  - **Sales order (SO):** what the customer buys. The salesman records the design, customisation and the **agreed selling price** per line (it can be below the catalogue price; the discount is kept), takes the advance and promises a delivery date.
+  - **Purchase order (PO):** what we buy from a factory, placed **against a sales order** by the salesman (or manager). It records the factory, expected completion date and **factory cost per line**.
+  - Every PO line points to the SO line it is made for. One SO can be split across several POs and factories; each SO line can be on only one active PO.
+  - This links each piece's selling price to its factory cost, giving the margin per order. The SO shows "Factory ordered" once its lines are on a PO.
 - **Order snapshots:** each order line saves the design, specifications and price at the moment of sale, so later catalogue edits don't change old orders.
 - **Two separate statuses on each order:**
   - Fulfilment: Draft → Confirmed → Factory Ordered → In Production → Received → Ready for Delivery → Delivered → Closed, or Cancelled.
@@ -92,7 +97,8 @@ Phases 3 and 4 are large, so each will likely be split into 2–3 smaller pull r
 **Phase 1: Clickable prototype** (`phase-1-prototype`)
 - Next.js screens with sample data stored in TypeScript files. There is no API yet.
 - Green theme, sidebar on desktop, bottom tabs on phones.
-- Salesman phone flow: home → catalogue → customise → new order → receive advance → confirmation.
+- Salesman phone flow: home → catalogue → customise (with agreed price) → new sales order → receive advance → confirmation → create factory (purchase) order against it.
+- Sales order detail page showing each line's factory order and cost.
 - Desktop new-order wizard.
 - Manager dashboard and admin dashboard.
 - Lists for factory orders, receiving, deliveries and expenses.
@@ -116,10 +122,10 @@ Phases 3 and 4 are large, so each will likely be split into 2–3 smaller pull r
 *Checkpoint:* the owner creates the Droplet, the Spaces bucket and the GitHub secrets (step-by-step guide provided). Staging goes live with real sign-in.
 
 **Phase 3: Operations** (`phase-3-…`, split into: sales orders and payments / factory purchasing and receiving / delivery)
-- Sales orders with snapshots and both statuses.
+- Sales orders (with line snapshots, agreed prices and both statuses).
 - Advances and balance collections.
 - Cancellations and refunds with a reason and approval.
-- Factory purchase orders linked to customer order lines, and production tracking.
+- Purchase orders to factories, created against a sales order; each PO line linked to a sales-order line, with factory cost. Production tracking.
 - Goods receipt with inspection notes and a photo of the factory invoice.
 - Delivery scheduling, worker assignments, proof of delivery.
 - Role-specific dashboards connected to real data.

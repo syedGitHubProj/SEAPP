@@ -21,6 +21,11 @@ SellEase is a furniture showroom app for ABC Furniture in Pakistan. It covers th
 - **Money:** `decimal` in C# and `numeric(18,2)` in PostgreSQL. Never floating-point numbers. PKR is the default currency, changeable in settings.
 - **IDs and numbers:** every record has a hidden ID (GUID) plus a readable number (SO-000145, PO-000032).
 - **Finished records:** posted financial records are never deleted. Corrections use reversal or adjustment entries, and the audit log records who changed what.
+- **Sales orders and purchase orders are separate records with separate flows.**
+  - **Sales order (SO):** what the customer buys. The salesman records the design, customisation and the **agreed selling price** per line (it can be below the catalogue price; the discount is kept), takes the advance and promises a delivery date.
+  - **Purchase order (PO):** what we buy from a factory, placed **against a sales order** by the salesman (or manager). It records the factory, expected completion date and **factory cost per line**.
+  - Every PO line points to the SO line it is made for. One SO can be split across several POs and factories; each SO line can be on only one active PO.
+  - This links each piece's selling price to its factory cost, giving the margin per order. The SO shows "Factory ordered" once its lines are on a PO.
 - **Order snapshots:** order lines save the design, specifications and price at the time of sale.
 - **Order statuses:** fulfilment status and payment status are tracked separately.
 - **Ledger:** business actions create balanced journal entries automatically. Factory purchases are never counted again as general expenses.
