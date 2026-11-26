@@ -13,7 +13,7 @@ Furniture sales, factory ordering and financial management for ABC Furniture.
 | `web/` | Next.js website (TypeScript, Tailwind) and its tests |
 | `deploy/` | Docker Compose files (local database now; server files from Phase 2) |
 | `docs/` | Brief, plan and guides |
-| `.github/workflows/` | CI: builds and tests both apps on every pull request |
+| `.github/workflows/` | CI: builds and tests both apps on every push to `main` |
 
 ## Run it locally
 

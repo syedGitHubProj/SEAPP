@@ -6,15 +6,16 @@ SellEase is a furniture showroom app for ABC Furniture in Pakistan. It covers th
 - Never commit secrets.
 - Never ask for, handle or store passwords, tokens or API keys. The owner enters them into GitHub Secrets or the server's `.env` themselves.
 - Never run database migrations against a server automatically. They run only from a GitHub Actions workflow that the owner starts by hand.
-- The owner pushes to GitHub and merges pull requests. Give them the exact `git push` command.
+- The owner pushes to GitHub. Give them the exact `git push` command.
 - Confirm with the owner before deleting anything.
 - Never commit the owner's Excel workbook (`*.xlsm`); it may hold real customer data.
 - This project is separate from the owner's other projects. Don't read or change folders outside SEAPP.
 - Explain things in short, plain English, with exact steps for anything the owner must do by hand.
 
 ## How we work
-- One branch and one pull request per phase (or per part of a large phase), named `phase-N-<topic>`.
-- Every pull request adds tests and must pass CI.
+- For now (owner's choice, 2026-11-25): work directly on `main`, no pull requests. Commit each piece of work to `main`; the owner runs `git push`.
+- Every change adds or updates tests, and everything must pass locally before committing. CI runs on every push to `main`; if it fails, fixing it comes first.
+- Pull requests per phase may return later (for example once the app is live); ask the owner before changing this.
 - Each phase ends with a checkpoint where the owner checks the result.
 
 ## Design rules

@@ -82,10 +82,10 @@ SEAPP/
 - `.env*` files
 - `.claude/settings.local.json`
 
-## Phases (one branch and one pull request each, with a checkpoint for the owner at the end)
-Phases 3 and 4 are large, so each will likely be split into 2–3 smaller pull requests. They are still reviewed one at a time.
+## Phases (each ends with a checkpoint for the owner)
+Work is committed directly to `main` for now, with no pull requests (owner's decision, 2026-11-25). Each phase is still tested and checked before the next starts. Phases 3 and 4 are large, so they'll be done in 2–3 smaller steps.
 
-**Phase 0: Project setup** (`phase-0-setup`)
+**Phase 0: Project setup** (done)
 - Run `git init`.
 - Add the README, CLAUDE.md, `.gitignore` and the folder skeleton.
 - Add a local `docker-compose` with PostgreSQL and MinIO.
@@ -94,7 +94,7 @@ Phases 3 and 4 are large, so each will likely be split into 2–3 smaller pull r
 
 *Checkpoint:* the owner pushes, and CI is green on GitHub.
 
-**Phase 1: Clickable prototype** (`phase-1-prototype`)
+**Phase 1: Clickable prototype** (built; waiting for staff feedback)
 - Next.js screens with sample data stored in TypeScript files. There is no API yet.
 - Green theme, sidebar on desktop, bottom tabs on phones.
 - Salesman phone flow: home → catalogue → customise (with agreed price) → new sales order → receive advance → confirmation → create factory (purchase) order against it.
@@ -109,7 +109,7 @@ Phases 3 and 4 are large, so each will likely be split into 2–3 smaller pull r
 
 *Checkpoint:* the owner and ABC staff try it on a laptop or phone and give feedback. Optional: put it on the Droplet at a staging address.
 
-**Phase 2: Core API, data and sign-in** (`phase-2-core`)
+**Phase 2: Core API, data and sign-in**
 - .NET solution and EF Core schema.
 - Identity, roles and per-action permissions.
 - Audit log, number sequences, settings (currency, branch).
@@ -121,7 +121,7 @@ Phases 3 and 4 are large, so each will likely be split into 2–3 smaller pull r
 
 *Checkpoint:* the owner creates the Droplet, the Spaces bucket and the GitHub secrets (step-by-step guide provided). Staging goes live with real sign-in.
 
-**Phase 3: Operations** (`phase-3-…`, split into: sales orders and payments / factory purchasing and receiving / delivery)
+**Phase 3: Operations** (in steps: sales orders and payments / factory purchasing and receiving / delivery)
 - Sales orders (with line snapshots, agreed prices and both statuses).
 - Advances and balance collections.
 - Cancellations and refunds with a reason and approval.
@@ -134,7 +134,7 @@ Phases 3 and 4 are large, so each will likely be split into 2–3 smaller pull r
 
 *Checkpoint:* ABC staff run a few real-looking orders from start to finish on staging.
 
-**Phase 4: Finance** (`phase-4-…`, split into: ledger, expenses and payments / reports and exports)
+**Phase 4: Finance** (in steps: ledger, expenses and payments / reports and exports)
 - Chart of accounts and automatic journal entries from every Phase 3 action.
 - Expenses with categories and manager approval.
 - Factory payments and the amount still owed to each supplier.
@@ -151,7 +151,7 @@ Phases 3 and 4 are large, so each will likely be split into 2–3 smaller pull r
 
 *Checkpoint:* the owner or accountant checks the reports against hand calculations.
 
-**Phase 5: Go-live** (`phase-5-golive`)
+**Phase 5: Go-live**
 - One-time Excel import from the `.xlsm`: customers, suppliers, orders, items and purchases. It runs a dry run first and shows a report before anything is written.
 - Opening balances.
 - Nightly `pg_dump` backup to Spaces, with a tested restore.
@@ -163,12 +163,12 @@ Phases 3 and 4 are large, so each will likely be split into 2–3 smaller pull r
 *Checkpoint:* the owner approves the import result. Staff training, then switch-over from Excel.
 
 ## What the owner does by hand (never handled by Claude)
-- `git push` and merging pull requests on GitHub (the exact commands are given each time).
+- `git push` to GitHub (the exact command is given each time).
 - Creating the Droplet, the Spaces bucket and the domain, and entering every password and key directly into GitHub Secrets or the server's `.env`.
 - Starting the database-migration workflow in GitHub Actions.
 
 ## Verification (every phase)
-- Run `dotnet test` and the web tests (`npm test`, Playwright) locally; CI must be green on the pull request.
+- Run `dotnet test` and the web tests (`npm test`, Playwright) locally; CI must be green after each push to `main`.
 - A manual walkthrough at phone width and desktop width in the browser.
 - From Phase 2 on: deploy to staging, run the migration by hand, and smoke-test the main flow of that phase.
 
