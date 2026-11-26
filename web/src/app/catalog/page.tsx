@@ -1,19 +1,21 @@
 "use client";
 
-import { Search } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { DesignArt } from "@/components/DesignArt";
 import { OrderSteps, OrderSummaryPanel } from "@/components/OrderFlow";
-import { Card, LinkButton, Money, PageHeader } from "@/components/ui";
+import { Button, Card, LinkButton, Money, PageHeader } from "@/components/ui";
 import { categories, designs, type Category } from "@/data/sample";
-import { useDraft } from "@/lib/prototype-store";
+import { useDraft, useRole } from "@/lib/prototype-store";
 
 export default function CatalogPage() {
   const t = useTranslations("catalog");
   const tc = useTranslations("categories");
   const draft = useDraft();
+  const role = useRole();
+  const canManage = role === "manager" || role === "admin";
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<Category | "all">("all");
 
@@ -29,7 +31,18 @@ export default function CatalogPage() {
   return (
     <>
       {draft.items.length > 0 && <OrderSteps current={1} />}
-      <PageHeader title={t("title")} subtitle={t("subtitle")} />
+      <PageHeader
+        title={t("title")}
+        subtitle={t("subtitle")}
+        actions={
+          canManage && (
+            <Button variant="secondary" disabled title={t("addDesignLater")}>
+              <Plus className="size-4" /> {t("addDesign")}
+            </Button>
+          )
+        }
+      />
+      {canManage && <p className="-mt-3 mb-4 text-xs text-zinc-500">{t("addDesignLater")}</p>}
 
       <div className="lg:grid lg:grid-cols-[1fr_20rem] lg:gap-6">
         <div className="min-w-0">

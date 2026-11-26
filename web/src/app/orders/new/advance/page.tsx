@@ -6,12 +6,13 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { OrderSteps } from "@/components/OrderFlow";
 import { Button, Card, LinkButton, Money, PageHeader } from "@/components/ui";
-import { customers, findDesign, nextOrderSequence } from "@/data/sample";
+import { findDesign, nextOrderSequence } from "@/data/sample";
 import { balanceDue, formatOrderNumber } from "@/lib/orders";
 import {
   draftTotal,
   listUnitPrice,
   placeOrder,
+  useCustomers,
   useDraft,
   usePlacedSalesOrders,
   type PaymentMethod,
@@ -30,6 +31,7 @@ export default function ReceiveAdvancePage() {
   const router = useRouter();
   const draft = useDraft();
   const placed = usePlacedSalesOrders();
+  const customers = useCustomers();
   const total = draftTotal(draft);
 
   const [amountText, setAmountText] = useState("");
@@ -72,7 +74,7 @@ export default function ReceiveAdvancePage() {
       status: "confirmed",
       deliveryDate: draft.deliveryDate,
       salesman: "Ali",
-    });
+    }, draft.newCustomer);
     router.push("/orders/new/done");
   };
 

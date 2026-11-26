@@ -17,6 +17,7 @@ import {
   Truck,
   Users,
   Wallet,
+  Warehouse,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -33,16 +34,18 @@ interface NavItem {
   roles: Role[];
 }
 
+// Admin has access to everything; Manager to everything except user administration.
 const ALL: Role[] = ["salesman", "manager", "admin"];
 const MGMT: Role[] = ["manager", "admin"];
 
 export const navItems: NavItem[] = [
   { href: "/", key: "home", icon: Home, roles: ALL },
   { href: "/catalog", key: "catalog", icon: LayoutGrid, roles: ALL },
-  { href: "/orders/new", key: "newSale", icon: Plus, roles: ["salesman", "manager"] },
+  { href: "/orders/new", key: "newSale", icon: Plus, roles: ALL },
   { href: "/orders", key: "orders", icon: ClipboardList, roles: ALL },
   { href: "/customers", key: "customers", icon: Users, roles: ALL },
   { href: "/factory-orders", key: "factoryOrders", icon: Factory, roles: ALL },
+  { href: "/factories", key: "factories", icon: Warehouse, roles: MGMT },
   { href: "/receiving", key: "receiving", icon: PackageCheck, roles: MGMT },
   { href: "/deliveries", key: "deliveries", icon: Truck, roles: MGMT },
   { href: "/expenses", key: "expenses", icon: Receipt, roles: MGMT },
@@ -190,7 +193,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   ) : (
                     <item.icon className="size-5" />
                   )}
-                  {t(item.key)}
+                  {t(isNew ? "newSaleShort" : item.key)}
                 </Link>
               </li>
             );

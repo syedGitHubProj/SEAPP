@@ -7,9 +7,13 @@
  */
 import { useMemo, useSyncExternalStore } from "react";
 import {
+  customers as sampleCustomers,
+  factories as sampleFactories,
   findDesign,
   purchaseOrders as samplePurchaseOrders,
   salesOrders as sampleSalesOrders,
+  type Customer,
+  type FactoryRecord,
   type FulfilmentStatus,
   type PurchaseOrder,
   type Role,
@@ -51,12 +55,15 @@ interface State {
   placed: SalesOrder[];
   /** Purchase orders created in this demo (newest first). */
   purchases: PurchaseOrder[];
+  /** Customers and factories added in this demo (newest first). */
+  customers: Customer[];
+  factories: FactoryRecord[];
 }
 
 const STORAGE_KEY = "sellease-prototype-v2";
 
 const emptyDraft: Draft = { items: [], customerId: null, newCustomer: null, deliveryDate: "" };
-const initialState: State = { role: "salesman", draft: emptyDraft, placed: [], purchases: [] };
+const initialState: State = { role: "salesman", draft: emptyDraft, placed: [], purchases: [], customers: [], factories: [] };
 
 function load(): State {
   if (typeof window === "undefined") return initialState;
@@ -106,6 +113,18 @@ export const usePlacedSalesOrders = () => useStore((s) => s.placed);
 /** Only the purchase orders created in this demo (newest first). */
 export const useCreatedPurchaseOrders = () => useStore((s) => s.purchases);
 
+/** Customers: demo-added first, then the sample ones. */
+export function useCustomers(): Customer[] {
+  const added = useStore((s) => s.customers);
+  return useMemo(() => [...added, ...sampleCustomers], [added]);
+}
+
+/** Factories: demo-added first, then the sample ones. */
+export function useFactories(): FactoryRecord[] {
+  const added = useStore((s) => s.factories);
+  return useMemo(() => [...added, ...sampleFactories], [added]);
+}
+
 /** Purchase orders: demo-created first, then the sample ones. */
 export function usePurchaseOrders(): PurchaseOrder[] {
   const created = useStore((s) => s.purchases);
@@ -147,8 +166,24 @@ export function updateDraft(patch: Partial<Draft>) {
   update((s) => ({ ...s, draft: { ...s.draft, ...patch } }));
 }
 
-export function placeOrder(order: SalesOrder) {
-  update((s) => ({ ...s, placed: [order, ...s.placed], draft: emptyDraft }));
+export function addCustomer(c: Omit<Customer, "id" | "orders" | "balance">): Customer {
+  const customer: Customer = { ...c, id: `new-${Date.now()}`, orders: 0, balance: 0 };
+  update((s) => ({ ...s, customers: [customer, ...s.customers] }));
+  return customer;
+}
+
+export function addFactory(f: Omit<FactoryRecord, "id">) {
+  update((s) => ({ ...s, factories: [{ ...f, id: `new-${Date.now()}` }, ...s.factories] }));
+}
+
+/** Saves a sale order. A customer typed in during the order is added to the customer list. */
+export function placeOrder(order: SalesOrder, newCustomer?: NewCustomer | null) {
+  update((s) => {
+    const customers = newCustomer
+      ? [{ id: `new-${Date.now()}`, name: newCustomer.name, phone: newCustomer.phone, area: newCustomer.address, orders: 1, balance: 0 }, ...s.customers]
+      : s.customers;
+    return { ...s, customers, placed: [order, ...s.placed], draft: emptyDraft };
+  });
 }
 
 export function createPurchaseOrder(po: PurchaseOrder) {

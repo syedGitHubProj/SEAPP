@@ -25,11 +25,9 @@ export default function OrdersPage() {
         title={role === "salesman" ? t("myTitle") : t("title")}
         subtitle={t("subtitle")}
         actions={
-          role !== "admin" && (
-            <LinkButton href="/catalog">
-              <Plus className="size-4" /> {t("newOrder")}
-            </LinkButton>
-          )
+          <LinkButton href="/catalog">
+            <Plus className="size-4" /> {t("newOrder")}
+          </LinkButton>
         }
       />
       <ResponsiveTable

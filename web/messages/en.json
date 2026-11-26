@@ -7,15 +7,15 @@
     "viewingAs": "Viewing as",
     "mainNav": "Main menu",
     "prototypeBanner": "Prototype with sample data. Nothing is saved to a server.",
-    "searchPlaceholder": "Search orders, customers or designs",
+    "searchPlaceholder": "Search sale orders, customers or designs",
     "notifications": "Notifications",
     "close": "Close"
   },
   "nav": {
     "home": "Home",
     "catalog": "Catalogue",
-    "newSale": "New sale",
-    "orders": "Orders",
+    "newSale": "New Sale Order",
+    "orders": "Sale Orders",
     "customers": "Customers",
     "factoryOrders": "Factory orders",
     "receiving": "Receiving",
@@ -24,7 +24,9 @@
     "cashBook": "Cash book",
     "reports": "Reports",
     "users": "Users & roles",
-    "more": "More"
+    "more": "More",
+    "factories": "Factories",
+    "newSaleShort": "New Sale"
   },
   "roles": {
     "salesman": "Salesman",
@@ -37,7 +39,9 @@
     "total": "Total",
     "balance": "Balance",
     "amount": "Amount",
-    "comingLater": "Coming in a later phase"
+    "comingLater": "Coming in a later phase",
+    "save": "Save",
+    "cancel": "Cancel"
   },
   "orderStatus": {
     "draft": "Draft",
@@ -110,12 +114,12 @@
     "salesman": {
       "greeting": "Good afternoon, {name}",
       "subtitle": "ABC Furniture · Salesman",
-      "newSale": "New sale",
+      "newSale": "New Sale Order",
       "customers": "Customers",
-      "myOrders": "My orders",
+      "myOrders": "My Sale Orders",
       "receivePayment": "Receive payment",
       "browseDesigns": "Browse designs",
-      "recentOrders": "My recent orders"
+      "recentOrders": "My recent Sale Orders"
     },
     "manager": {
       "title": "Showroom manager",
@@ -124,7 +128,7 @@
       "collections": "Collections",
       "factoryOrders": "Open factory orders",
       "pendingDeliveries": "Pending deliveries",
-      "approveOrders": "Approve orders",
+      "approveOrders": "Approve Sale Orders",
       "approveOrdersHint": "Review & confirm",
       "factoryOrdersTile": "Factory orders",
       "factoryOrdersHint": "Create & track",
@@ -140,8 +144,8 @@
       "reportsHint": "Sales, P&L, balance sheet",
       "todaySummary": "Today's summary",
       "todaySummaryHint": "In / out overview",
-      "lateFactory": "{po} from {factory} is late (for {order}).",
-      "deliveryNoTeam": "Delivery for {order} has no team assigned yet.",
+      "lateFactory": "{po} from {factory} is late (for Sale Order {order}).",
+      "deliveryNoTeam": "Delivery for Sale Order {order} has no team assigned yet.",
       "expenseWaiting": "1 expense is waiting for your approval."
     },
     "admin": {
@@ -156,18 +160,18 @@
       "operatingMargin": "Operating margin",
       "activeUsers": "{count} active staff accounts",
       "recentActivity": "Recent activity",
-      "allOrders": "All orders",
+      "allOrders": "All Sale Orders",
       "manageUsers": "Manage users"
     }
   },
   "audit": {
-    "orderCreated": "{who} created order {ref}",
+    "orderCreated": "{who} created Sale Order {ref}",
     "expenseApproved": "{who} approved expense {ref}",
     "poIssued": "{who} issued factory order {ref}",
     "userChanged": "{who} changed user {ref}"
   },
   "orderSteps": {
-    "label": "New order steps",
+    "label": "New Sale Order steps",
     "selectDesigns": "Select designs",
     "customise": "Customise",
     "customerPayment": "Customer & payment",
@@ -181,8 +185,10 @@
     "noResults": "No designs match your search.",
     "selectDesign": "Select {name}",
     "select": "Select",
-    "itemsInOrder": "{count, plural, one {# item} other {# items}} in this order",
-    "continue": "Continue →"
+    "itemsInOrder": "{count, plural, one {# item} other {# items}} in this Sale Order",
+    "continue": "Continue →",
+    "addDesign": "Add design",
+    "addDesignLater": "Managers and Admin add and edit designs, prices and photos. This arrives in Phase 2."
   },
   "customise": {
     "back": "Back to catalogue",
@@ -199,21 +205,21 @@
     "less": "Decrease quantity",
     "more": "Increase quantity",
     "totalPrice": "Total price",
-    "addToOrder": "Add to order",
+    "addToOrder": "Add to Sale Order",
     "catalogPrice": "Catalogue price (per piece)",
     "agreedPrice": "Agreed selling price (per piece)",
     "agreedPriceHint": "The price agreed with the customer. Change it if you give a discount.",
     "discount": "Discount from catalogue"
   },
   "newOrder": {
-    "title": "New customer order",
+    "title": "New Sale Order",
     "emptySubtitle": "Start by choosing a design.",
-    "empty": "This order has no items yet.",
+    "empty": "This Sale Order has no items yet.",
     "browseCatalog": "Choose from catalogue",
     "removeItem": "Remove {name}",
-    "summaryTitle": "Order summary",
+    "summaryTitle": "Sale Order summary",
     "selectedItems": "{count, plural, one {# item} other {# items}} selected",
-    "total": "Order total",
+    "total": "Sale Order total",
     "nextCustomer": "Next: customer & payment",
     "customer": "Customer",
     "pickExisting": "Pick existing",
@@ -223,7 +229,7 @@
     "address": "Delivery address",
     "chooseCustomer": "Choose customer",
     "chooseCustomerPlaceholder": "Select a customer…",
-    "orderItems": "Order items ({count})",
+    "orderItems": "Sale Order items ({count})",
     "addMoreDesigns": "Add more designs",
     "expectedDelivery": "Expected delivery",
     "fillRequired": "Choose a customer and a delivery date to continue.",
@@ -231,12 +237,12 @@
   },
   "advance": {
     "title": "Receive advance",
-    "orderLabel": "Order {number}",
-    "noOrder": "There is no order waiting for an advance.",
-    "startOrder": "Start a new order",
-    "orderTotal": "Order total",
+    "orderLabel": "Sale Order {number}",
+    "noOrder": "There is no Sale Order waiting for an advance.",
+    "startOrder": "Start a new Sale Order",
+    "orderTotal": "Sale Order total",
     "advanceAmount": "Advance amount (Rs.)",
-    "tooMuch": "The advance can't be more than the order total.",
+    "tooMuch": "The advance can't be more than the Sale Order total.",
     "paymentMethod": "Payment method",
     "methods": {
       "cash": "Cash",
@@ -249,9 +255,9 @@
     "recordPayment": "Record payment"
   },
   "done": {
-    "title": "Order created successfully!",
-    "none": "No order has been created yet.",
-    "orderNo": "Order no.",
+    "title": "Sale Order created successfully!",
+    "none": "No Sale Order has been created yet.",
+    "orderNo": "Sale Order no.",
     "customer": "Customer",
     "items": "Items",
     "total": "Total amount",
@@ -260,24 +266,24 @@
     "delivery": "Delivery (expected)",
     "viewInvoice": "View invoice",
     "invoiceLater": "Printable invoices arrive in Phase 4.",
-    "createAnother": "Create another order",
-    "goToOrders": "Go to orders",
-    "nextStepPo": "Next step: order this furniture from a factory. The factory order is linked to this sales order.",
+    "createAnother": "Create another Sale Order",
+    "goToOrders": "Go to Sale Orders",
+    "nextStepPo": "Next step: order this furniture from a factory. The factory order is linked to this Sale Order.",
     "createPo": "Create factory order",
-    "viewOrder": "View sales order"
+    "viewOrder": "View Sale Order"
   },
   "orders": {
-    "title": "All orders",
-    "myTitle": "My orders",
-    "subtitle": "Customer sales orders. Delivery progress and payment are tracked separately.",
-    "newOrder": "New order",
-    "number": "Order no.",
+    "title": "All Sale Orders",
+    "myTitle": "My Sale Orders",
+    "subtitle": "Customer Sale Orders. Delivery progress and payment are tracked separately.",
+    "newOrder": "New Sale Order",
+    "number": "Sale Order no.",
     "customer": "Customer",
     "items": "Items",
     "delivery": "Delivery",
     "payment": "Payment",
     "status": "Status",
-    "note": "Tap an order number to see its lines and factory orders. Orders you create in this demo appear at the top (saved in this browser only)."
+    "note": "Tap a Sale Order number to see its items and factory orders. Sale Orders you create in this demo appear at the top (saved in this browser only)."
   },
   "customers": {
     "title": "Customers",
@@ -285,17 +291,21 @@
     "name": "Name",
     "phone": "Phone",
     "area": "Area",
-    "orders": "Orders",
-    "settled": "Settled"
+    "orders": "Sale Orders",
+    "settled": "Settled",
+    "add": "Add customer",
+    "addTitle": "New customer",
+    "address": "Address / area",
+    "note": "Every role can add customers. A new customer typed in during a Sale Order is added here too. Saved in this browser only until Phase 2."
   },
   "factoryOrders": {
     "title": "Factory orders",
-    "subtitle": "Purchase orders placed with factories. Each one is linked to the sales order it is made for.",
+    "subtitle": "Purchase orders placed with factories. Each one is linked to the Sale Order it is made for.",
     "new": "New factory order",
     "owedToFactories": "Still owed to factories",
     "number": "PO no.",
     "factory": "Factory",
-    "forOrder": "For order",
+    "forOrder": "For Sale Order",
     "items": "Items",
     "expected": "Expected",
     "cost": "Cost",
@@ -328,7 +338,7 @@
     "subtitle": "Scheduled deliveries, teams and balances to collect.",
     "date": "Date",
     "customer": "Customer",
-    "order": "Order",
+    "order": "Sale Order",
     "address": "Address",
     "team": "Team",
     "notAssigned": "Not assigned",
@@ -405,12 +415,12 @@
     "note": "Real sign-in, roles and permissions arrive in Phase 2."
   },
   "orderDetail": {
-    "notFound": "Sales order {number} was not found.",
-    "backToOrders": "Back to orders",
-    "title": "Sales order {number}",
+    "notFound": "Sale Order {number} was not found.",
+    "backToOrders": "Back to Sale Orders",
+    "title": "Sale Order {number}",
     "subtitle": "{customer} · {date} · Salesman: {salesman}",
     "createPo": "Create factory order",
-    "status": "Order status",
+    "status": "Sale Order status",
     "payment": "Payment",
     "delivery": "Delivery promised",
     "lines": "Items sold",
@@ -421,7 +431,7 @@
     "notOrdered": "Not ordered yet",
     "factoryCost": "Factory cost",
     "discount": "Discount given",
-    "orderTotal": "Order total",
+    "orderTotal": "Sale Order total",
     "received": "Received from customer",
     "factoryCostTotal": "Factory cost so far",
     "grossMargin": "Margin before other costs",
@@ -430,10 +440,10 @@
   "newPo": {
     "back": "Back to factory orders",
     "title": "New factory order",
-    "subtitle": "Purchase order {number}, made against a customer's sales order",
-    "salesOrder": "For sales order",
-    "chooseSalesOrder": "Select a sales order…",
-    "nothingToOrder": "Every sales order already has all its items on factory orders.",
+    "subtitle": "Purchase order {number}, made against a customer's Sale Order",
+    "salesOrder": "For Sale Order",
+    "chooseSalesOrder": "Select a Sale Order…",
+    "nothingToOrder": "Every Sale Order already has all its items on factory orders.",
     "linesTitle": "Items to order from this factory",
     "linesHint": "Untick items that will go to a different factory; you can order them separately.",
     "qtyAndSale": "Qty {qty} · sold for",
@@ -444,8 +454,23 @@
     "expected": "Expected completion",
     "totalCost": "Total factory cost",
     "marginOnLines": "Margin on these items",
-    "fillRequired": "Choose a sales order, at least one item with its factory cost, a factory and a completion date.",
+    "fillRequired": "Choose a Sale Order, at least one item with its factory cost, a factory and a completion date.",
     "create": "Create factory order",
-    "alreadyOrdered": "All items on {number} are already on factory orders. Choose another sales order."
+    "alreadyOrdered": "All items on Sale Order {number} are already on factory orders. Choose another Sale Order."
+  },
+  "factories": {
+    "title": "Factories",
+    "subtitle": "Factories we buy furniture from. Managers and Admin can add and edit them.",
+    "add": "Add factory",
+    "addTitle": "New factory",
+    "name": "Factory name",
+    "contact": "Contact person",
+    "phone": "Phone",
+    "city": "City",
+    "speciality": "Makes",
+    "openOrders": "Open factory orders",
+    "owed": "Still owed",
+    "noAccess": "Only Managers and Admin can manage factories.",
+    "note": "Factories added here appear in the New factory order screen. Saved in this browser only until Phase 2."
   }
 }

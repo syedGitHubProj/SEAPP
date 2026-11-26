@@ -67,6 +67,21 @@ ABC Furniture (a showroom in Pakistan) runs on an Excel workbook (`Furniture_Sto
 - **Languages:** all screen text comes from `messages/en.json`, and the layout uses start/end spacing so right-to-left works later.
 - **Database migrations on the server are never automatic.** They run only from a GitHub Actions workflow that the owner starts by hand, as on PTRP.
 
+## Who can do what (owner-confirmed 2026-11-25)
+| Action | Salesman | Manager | Admin |
+|---|:-:|:-:|:-:|
+| View catalogue | ✓ | ✓ | ✓ |
+| Add / edit designs, prices, photos | | ✓ | ✓ |
+| Add / edit customers | ✓ | ✓ | ✓ |
+| Create Sale Orders, take advances and payments | ✓ | ✓ | ✓ |
+| Create factory (purchase) orders against a Sale Order | ✓ | ✓ | ✓ |
+| Add / edit factories | | ✓ | ✓ |
+| Receiving, deliveries, expense approval, cash book, reports | | ✓ | ✓ |
+| Users, roles, settings, audit log, financial corrections | | | ✓ |
+
+Admin has full access to everything. Workers and skilled workers only see the receiving and delivery tasks assigned to them (Phase 3).
+On screens, a customer's order is called a **Sale Order**.
+
 ## Repository layout
 ```
 SEAPP/
@@ -113,7 +128,7 @@ Work is committed directly to `main` for now, with no pull requests (owner's dec
 - .NET solution and EF Core schema.
 - Identity, roles and per-action permissions.
 - Audit log, number sequences, settings (currency, branch).
-- Customers, designs and accessories, with photo upload to Spaces.
+- Customers (all roles), designs and accessories (Manager/Admin) with photo upload to Spaces, and factories (Manager/Admin).
 - Connect the web sign-in, customers and catalogue to the real API.
 - Docker images, Caddy, `deploy.yml`, and the manual `migrate.yml`.
 

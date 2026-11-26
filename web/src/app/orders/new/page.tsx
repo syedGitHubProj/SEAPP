@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { DraftItemRow, OrderSteps } from "@/components/OrderFlow";
 import { Button, Card, LinkButton, Money, PageHeader } from "@/components/ui";
-import { customers } from "@/data/sample";
-import { draftTotal, updateDraft, useDraft } from "@/lib/prototype-store";
+import { draftTotal, updateDraft, useCustomers, useDraft } from "@/lib/prototype-store";
 
 const inputClass = "min-h-11 w-full rounded-xl border border-black/10 bg-white px-3 text-sm";
 
@@ -14,6 +13,7 @@ export default function NewOrderPage() {
   const t = useTranslations("newOrder");
   const router = useRouter();
   const draft = useDraft();
+  const customers = useCustomers();
   const total = draftTotal(draft);
   const isNewCustomer = draft.newCustomer !== null;
 

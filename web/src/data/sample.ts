@@ -171,7 +171,20 @@ export const salesOrders: SalesOrder[] = [
 export const nextOrderSequence = 145;
 export const nextPurchaseOrderSequence = 37;
 
-export const factories = ["Chiniot Royal Works", "Lahore Woodcraft", "Gujrat Furniture House"];
+export interface FactoryRecord {
+  id: string;
+  name: string;
+  contact: string;
+  phone: string;
+  city: string;
+  speciality: string;
+}
+
+export const factories: FactoryRecord[] = [
+  { id: "f1", name: "Chiniot Royal Works", contact: "Haji Aslam", phone: "0300-6611223", city: "Chiniot", speciality: "Royal carved sets, dining" },
+  { id: "f2", name: "Lahore Woodcraft", contact: "Rashid Mehmood", phone: "0321-7654321", city: "Lahore", speciality: "Sofas, living room" },
+  { id: "f3", name: "Gujrat Furniture House", contact: "Nadeem Butt", phone: "0333-4455667", city: "Gujrat", speciality: "Bedroom, dining" },
+];
 
 export type PurchaseOrderStatus = "ordered" | "inProduction" | "late" | "received";
 

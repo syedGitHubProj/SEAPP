@@ -6,11 +6,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Button, Card, Money, PageHeader } from "@/components/ui";
-import { factories, nextPurchaseOrderSequence } from "@/data/sample";
+import { nextPurchaseOrderSequence } from "@/data/sample";
 import { formatOrderNumber } from "@/lib/orders";
 import {
   createPurchaseOrder,
   useCreatedPurchaseOrders,
+  useFactories,
   usePurchaseOrders,
   useSalesOrders,
 } from "@/lib/prototype-store";
@@ -25,6 +26,7 @@ export function NewPurchaseOrder() {
   const purchaseOrders = usePurchaseOrders();
   const created = useCreatedPurchaseOrders();
   const params = useSearchParams();
+  const factories = useFactories();
 
   // Only sales orders that still have lines waiting for a factory can be chosen.
   const candidates = salesOrders.filter(
@@ -147,7 +149,7 @@ export function NewPurchaseOrder() {
             <select className={inputClass} value={factory} onChange={(e) => setFactory(e.target.value)}>
               <option value="">{t("chooseFactory")}</option>
               {factories.map((f) => (
-                <option key={f} value={f}>{f}</option>
+                <option key={f.id} value={f.name}>{f.name} — {f.city}</option>
               ))}
             </select>
           </label>

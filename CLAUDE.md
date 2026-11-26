@@ -27,6 +27,8 @@ SellEase is a furniture showroom app for ABC Furniture in Pakistan. It covers th
   - **Purchase order (PO):** what we buy from a factory, placed **against a sales order** by the salesman (or manager). It records the factory, expected completion date and **factory cost per line**.
   - Every PO line points to the SO line it is made for. One SO can be split across several POs and factories; each SO line can be on only one active PO.
   - This links each piece's selling price to its factory cost, giving the margin per order. The SO shows "Factory ordered" once its lines are on a PO.
+- **Roles:** Admin can do everything. Manager can do everything except user/settings administration, including adding designs and factories. Salesman: customers, Sale Orders, payments, and factory orders against a Sale Order. The full table is in `docs/PLAN.md`.
+- **Wording:** customer orders are called **Sale Orders** on screen.
 - **Order snapshots:** order lines save the design, specifications and price at the time of sale.
 - **Order statuses:** fulfilment status and payment status are tracked separately.
 - **Ledger:** business actions create balanced journal entries automatically. Factory purchases are never counted again as general expenses.
