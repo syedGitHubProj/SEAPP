@@ -19,6 +19,113 @@ In the commands below, replace `203.0.113.10` with your **Droplet's IP address**
 
 ---
 
+## Step 0: Create a new Droplet (skip if you're reusing one)
+
+### 0a. An SSH key on your Mac (your own key, for you to sign in)
+
+Check whether you already have one:
+
+```bash
+ls ~/.ssh/id_ed25519.pub
+```
+
+If it says "No such file", make one. When it asks for a **passphrase**, choose one and remember it; it protects the key if your Mac is lost.
+
+```bash
+ssh-keygen -t ed25519 -C "owner-mac"
+```
+
+Print the public half, which is safe to share, to paste into DigitalOcean:
+
+```bash
+cat ~/.ssh/id_ed25519.pub
+```
+
+### 0b. Create the Droplet in DigitalOcean
+
+Go to https://cloud.digitalocean.com, then **Create → Droplets**, and choose:
+
+| Setting | Choose | Why |
+|---|---|---|
+| **Region** | **Bangalore (BLR1)**, or Singapore (SGP1) | Closest to Pakistan, so pages load faster. Put the Spaces bucket (Step 3) in the same region. If Spaces isn't offered in Bangalore, use Singapore for both. |
+| **Image** | **Marketplace → "Docker on Ubuntu"** (Ubuntu 24.04) | Docker and Docker Compose come already installed. |
+| **Size** | **Basic → Regular → 4 GB RAM / 2 CPUs / 80 GB SSD** (about US$24/month) | Enough for staging and later 2–3 client apps. 2 GB is too small. |
+| **Authentication** | **SSH Key → New SSH Key**: paste the line from `cat ~/.ssh/id_ed25519.pub` and name it "Owner Mac" | Safer than a password. |
+| **Backups** | Optional (adds about 20% to the price) | Nice for staging. The live server gets its own database backups in Phase 5. |
+| **Monitoring** | Tick **Improved metrics monitoring** (free) | Shows memory and CPU graphs. |
+| **Hostname** | `selease-staging` | Just a label. |
+
+Click **Create Droplet**. After about a minute it shows an **IP address**: that's the `203.0.113.10` used in the commands below.
+
+### 0c. A firewall (only web and SSH open)
+
+In DigitalOcean go to **Networking → Firewalls → Create Firewall**. Name it `selease-web` and set these **Inbound rules**:
+
+| Type | Protocol | Port | Sources |
+|---|---|---|---|
+| SSH | TCP | 22 | All IPv4, All IPv6 |
+| HTTP | TCP | 80 | All IPv4, All IPv6 |
+| HTTPS | TCP | 443 | All IPv4, All IPv6 |
+| Custom | UDP | 443 | All IPv4, All IPv6 (faster HTTPS for phones) |
+
+Leave the outbound rules as they are. Under **Apply to Droplets**, choose `selease-staging`, then click **Create Firewall**.
+
+> Use this DigitalOcean firewall, not Ubuntu's own `ufw`: Docker skips `ufw`'s rules, but it can't skip this one.
+
+### 0d. First sign-in, updates and your own user
+
+From your Mac (the first sign-in is as `root`; type `yes` when asked about the fingerprint):
+
+```bash
+ssh root@203.0.113.10
+```
+
+Install the latest security updates. This can take a few minutes; if a purple screen asks a question, press Enter to keep the default.
+
+```bash
+apt update && apt upgrade -y
+```
+
+Make your own user (replace `farooq` with the name you want). It asks you to choose a password, which you'll need for `sudo`. Press Enter through the other questions.
+
+```bash
+adduser farooq
+```
+
+Give it admin rights, Docker rights and your SSH key:
+
+```bash
+usermod -aG sudo,docker farooq && rsync --archive --chown=farooq:farooq ~/.ssh /home/farooq
+```
+
+Restart the Droplet so the updates take effect:
+
+```bash
+reboot
+```
+
+Wait a minute, then **check you can sign in as your own user** (from now on, always use this):
+
+```bash
+ssh farooq@203.0.113.10
+```
+
+```bash
+sudo whoami
+```
+
+It should print `root` after asking for your password.
+
+**Only after that works**, switch off direct `root` sign-in (safer):
+
+```bash
+sudo sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config && sudo systemctl restart ssh
+```
+
+Your new Droplet is ready. Carry on with **Step 1**, using `farooq` wherever the guide says `youruser`.
+
+---
+
 ## Step 1: Check the Droplet
 
 Connect to the Droplet as you normally do:
