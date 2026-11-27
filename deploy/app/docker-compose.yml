@@ -29,7 +29,7 @@ services:
         condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: ${APP_ENVIRONMENT:-Production}
-      ConnectionStrings__Default: Host=db;Port=5432;Database=sellease;Username=sellease;Password=${POSTGRES_PASSWORD}
+      ConnectionStrings__Default: Host=db;Port=5432;Database=sellease;Username=sellease;Password=${POSTGRES_PASSWORD};Gss Encryption Mode=Disable
       Photos__Store: ${PHOTOS_STORE:-S3}
       Photos__S3__ServiceUrl: ${SPACES_ENDPOINT:-}
       Photos__S3__Bucket: ${SPACES_BUCKET:-}
