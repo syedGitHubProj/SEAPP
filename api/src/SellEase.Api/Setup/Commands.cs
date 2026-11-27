@@ -38,7 +38,7 @@ public static class Commands
                 }
                 await DatabaseSetup.RunAsync(services);
                 await DevSeed.RunAsync(services, app.Configuration);
-                Console.WriteLine("Sample staff accounts are ready (see appsettings.Development.json).");
+                Console.WriteLine("Sample staff, customers, factories and designs are ready (password in appsettings.Development.json).");
                 return 0;
 
             case "create-admin" when args.Length >= 3:

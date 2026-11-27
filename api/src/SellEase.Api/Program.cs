@@ -5,6 +5,7 @@ using SellEase.Api.Admin;
 using SellEase.Api.Auth;
 using SellEase.Api.Common;
 using SellEase.Api.Data;
+using SellEase.Api.Records;
 using SellEase.Api.Domain;
 using SellEase.Api.Setup;
 
@@ -76,6 +77,9 @@ app.UseAuthorization();
 app.MapGet("/health", () => Results.Ok(new { status = "ok", app = "SellEase" })).AllowAnonymous();
 app.MapAuthEndpoints();
 app.MapAdminEndpoints();
+app.MapCustomerEndpoints();
+app.MapFactoryEndpoints();
+app.MapCatalogEndpoints();
 
 app.Run();
 

@@ -30,6 +30,14 @@ public static class DatabaseSetup
         if (!await db.Settings.AnyAsync(ct))
             db.Settings.Add(new BusinessSettings { BusinessName = "ABC Furniture" });
 
+        if (!await db.Categories.AnyAsync(ct))
+        {
+            // Starting categories; the Manager can rename them or add more.
+            string[] names = ["Royal", "Sofa", "Bedroom", "Dining", "Living"];
+            for (var i = 0; i < names.Length; i++)
+                db.Categories.Add(new Category { Name = names[i], SortOrder = i + 1 });
+        }
+
         var existing = await db.NumberSequences.Select(s => s.Prefix).ToListAsync(ct);
         foreach (var prefix in NumberSequences.All.Except(existing))
             db.NumberSequences.Add(new NumberSequence { Prefix = prefix });

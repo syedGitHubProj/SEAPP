@@ -19,6 +19,7 @@ public sealed class AuditInterceptor(ICurrentUser currentUser) : SaveChangesInte
         nameof(AppUser.PasswordHash), nameof(AppUser.SecurityStamp), nameof(AppUser.ConcurrencyStamp),
         nameof(AppUser.NormalizedUserName), nameof(AppUser.NormalizedEmail),
         nameof(AppUser.AccessFailedCount), nameof(AppUser.LockoutEnd),
+        nameof(EditableRecord.Version), nameof(EditableRecord.UpdatedAt), nameof(Customer.PhoneDigits),
     ];
 
     public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
@@ -36,6 +37,7 @@ public sealed class AuditInterceptor(ICurrentUser currentUser) : SaveChangesInte
 
     private void AddAuditEntries(AppDbContext db)
     {
+        db.ChangeTracker.DetectChanges();
         var entries = db.ChangeTracker.Entries()
             .Where(e => e.Entity is IAudited && e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted)
             .ToList();

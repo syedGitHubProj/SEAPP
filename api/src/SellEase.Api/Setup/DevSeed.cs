@@ -32,5 +32,7 @@ public static class DevSeed
             if (!result.Succeeded) throw new InvalidOperationException(string.Join("; ", result.Errors.Select(e => e.Description)));
             await users.AddToRoleAsync(user, role);
         }
+
+        await DevSeedRecords.RunAsync(db, services.GetRequiredService<SellEase.Api.Common.NumberSequences>());
     }
 }

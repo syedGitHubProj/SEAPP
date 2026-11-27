@@ -8,9 +8,11 @@ public sealed class NumberSequences(AppDbContext db)
 {
     public const string SaleOrder = "SO";
     public const string PurchaseOrder = "PO";
+    public const string Customer = "CU";
+    public const string Factory = "FA";
 
     /// <summary>Every prefix the app uses; created by the database setup.</summary>
-    public static readonly string[] All = [SaleOrder, PurchaseOrder];
+    public static readonly string[] All = [SaleOrder, PurchaseOrder, Customer, Factory];
 
     public static string Format(string prefix, long value) => $"{prefix}-{value:D6}";
 
