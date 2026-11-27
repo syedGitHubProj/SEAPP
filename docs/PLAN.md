@@ -165,6 +165,23 @@ Work is committed directly to `main` for now, with no pull requests (owner's dec
 
 *Tests:* integration tests on a real PostgreSQL for permissions, customers and catalogue.
 
+*Built in steps*, each committed to `main` with its tests:
+- **2a. Foundation (done):**
+  - database and first migration
+  - sign-in with username or phone number, roles and permissions
+  - the Admin's staff accounts
+  - audit log, number sequences (SO-000145) and settings (currency, branch)
+- **2b. Records:** customers (all roles), factories, and designs with accessories (Manager/Admin), each with an audit trail.
+- **2c. Photos:** design photos are stored on the computer during development and in DigitalOcean Spaces on the server.
+- **2d. Website on real data:**
+  - a sign-in page
+  - the customers, factories and catalogue pages read from and save to the API
+  - the role switcher is replaced by the real signed-in user
+- **2e. Going online:**
+  - Docker images, Caddy, and `deploy.yml`
+  - the manual `migrate.yml`
+  - a step-by-step guide for the owner to set up the Droplet, DNS and secrets
+
 *Checkpoint:* the owner creates the Droplet, the Spaces bucket and the GitHub secrets (step-by-step guide provided). Staging goes live with real sign-in.
 
 **Phase 3: Operations** (in steps: sales orders and payments / factory purchasing and receiving / delivery)

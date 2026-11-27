@@ -37,7 +37,15 @@ SellEase is a furniture showroom app for ABC Furniture in Pakistan. It covers th
 - **Screen text:** all text goes through translation files (`next-intl`, `messages/en.json`), and layouts use start/end spacing so Urdu right-to-left can be added later.
 
 ## Commands
-- **API:** `cd api && dotnet test`, then `dotnet run --project src/SellEase.Api`
+- **API:**
+  - Run `cd api && dotnet test`. The tests start their own PostgreSQL through Testcontainers, so Docker must be running.
+  - Then run `dotnet run --project src/SellEase.Api --launch-profile http`. The API is at http://localhost:5216.
+- **API one-off commands** (add `--` after `dotnet run --project src/SellEase.Api`):
+  - `migrate`: applies database changes and reference data. On a server it runs only from the manual workflow.
+  - `seed-dev`: creates sample staff accounts for your own computer only. The password is in `appsettings.Development.json`.
+  - `create-admin USERNAME "NAME"`: creates an Admin. The owner types the password; it is never passed as an argument.
+- **New migration:** `cd api && dotnet ef migrations add <Name> --project src/SellEase.Api --output-dir Data/Migrations`. A test fails if you forget it.
+- **Permissions:** `api/src/SellEase.Api/Auth/Permissions.cs` mirrors the "Who can do what" table in `docs/PLAN.md`. Every endpoint needs a signed-in user unless it is marked `AllowAnonymous`.
 - **Web:** `cd web && npm run lint && npm test && npm run build && npm run e2e`, or `npm run dev`
 - **Prototype data:** sample data is in `web/src/data/sample.ts`; browser-only demo state is in `web/src/lib/prototype-store.ts`. Both are replaced by API calls from Phase 2.
 - **Screen text:** all text is in `web/messages/en.json`.
