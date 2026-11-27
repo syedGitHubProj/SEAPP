@@ -63,6 +63,20 @@ public class Design : EditableRecord
     public List<DesignMaterial> Materials { get; set; } = [];
     public List<DesignColor> Colors { get; set; } = [];
     public List<DesignAccessory> Accessories { get; set; } = [];
+    /// <summary>Photos in display order; the first is the main photo.</summary>
+    public List<DesignPhoto> Photos { get; set; } = [];
+}
+
+/// <summary>A design photo. The file is in the photo store under <c>StorageKey</c>.</summary>
+public class DesignPhoto : IAudited
+{
+    public Guid Id { get; set; }
+    public Guid DesignId { get; set; }
+    public required string StorageKey { get; set; }
+    public required string ContentType { get; set; }
+    public long SizeBytes { get; set; }
+    public int SortOrder { get; set; }
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }
 
 /// <summary>Common parts of a design's option lists.</summary>

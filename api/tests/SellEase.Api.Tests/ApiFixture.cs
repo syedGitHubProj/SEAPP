@@ -29,6 +29,9 @@ public sealed class ApiFixture : IAsyncLifetime
 
     public WebApplicationFactory<Program> Factory { get; private set; } = null!;
 
+    /// <summary>Uploaded photos go to a temporary folder that is removed afterwards.</summary>
+    public string PhotoFolder { get; } = Path.Combine(Path.GetTempPath(), "sellease-test-photos-" + Guid.NewGuid().ToString("N"));
+
     public async Task InitializeAsync()
     {
         await _db.StartAsync();
@@ -36,6 +39,8 @@ public sealed class ApiFixture : IAsyncLifetime
         {
             b.UseEnvironment("Testing");
             b.UseSetting("ConnectionStrings:Default", _db.GetConnectionString());
+            b.UseSetting("Photos:Store", "Local");
+            b.UseSetting("Photos:LocalPath", PhotoFolder);
         });
 
         using var scope = Factory.Services.CreateScope();
@@ -49,6 +54,7 @@ public sealed class ApiFixture : IAsyncLifetime
     {
         await Factory.DisposeAsync();
         await _db.DisposeAsync();
+        if (Directory.Exists(PhotoFolder)) Directory.Delete(PhotoFolder, recursive: true);
     }
 
     public async Task<AppUser> CreateUserAsync(string userName, string role)

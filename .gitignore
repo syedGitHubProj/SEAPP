@@ -32,3 +32,6 @@ next-env.d.ts
 
 # Office temporary lock files (created while a document is open)
 ~$*
+
+# Design photos stored on a developer computer (API "Local" photo store)
+api/src/SellEase.Api/local-photos/

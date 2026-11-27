@@ -44,6 +44,11 @@ SellEase is a furniture showroom app for ABC Furniture in Pakistan. It covers th
   - `migrate`: applies database changes and reference data. On a server it runs only from the manual workflow.
   - `seed-dev`: creates sample staff accounts for your own computer only. The password is in `appsettings.Development.json`.
   - `create-admin USERNAME "NAME"`: creates an Admin. The owner types the password; it is never passed as an argument.
+- **Design photos:**
+  - Development uses the setting `Photos:Store=Local`, which keeps the files in `api/src/SellEase.Api/local-photos/` (ignored by git).
+  - Servers use `Photos:Store=S3` with DigitalOcean Spaces. The `Photos__S3__*` keys are entered by the owner in the server's `.env`.
+  - The bucket stays private, and the API serves the photos.
+  - Don't name a folder `data/` next to `Data/`: macOS treats them as the same folder.
 - **New migration:** `cd api && dotnet ef migrations add <Name> --project src/SellEase.Api --output-dir Data/Migrations`. A test fails if you forget it.
 - **Permissions:** `api/src/SellEase.Api/Auth/Permissions.cs` mirrors the "Who can do what" table in `docs/PLAN.md`. Every endpoint needs a signed-in user unless it is marked `AllowAnonymous`.
 - **Web:** `cd web && npm run lint && npm test && npm run build && npm run e2e`, or `npm run dev`

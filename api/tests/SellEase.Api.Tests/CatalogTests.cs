@@ -12,7 +12,8 @@ public sealed record DesignDto(
     Guid Id, string Code, string Name, Guid CategoryId, decimal BasePrice,
     string? Dimensions, string? Wood, string? Description,
     MaterialDto[] Materials, ColorDto[] Colors, AccessoryDto[] Accessories,
-    bool IsActive, uint Version);
+    bool IsActive, uint Version, PhotoDto[]? Photos = null);
+public sealed record PhotoDto(Guid Id, string Url);
 
 [Collection(ApiCollection.Name)]
 public class CatalogTests(ApiFixture api)

@@ -5,6 +5,7 @@ using SellEase.Api.Admin;
 using SellEase.Api.Auth;
 using SellEase.Api.Common;
 using SellEase.Api.Data;
+using SellEase.Api.Photos;
 using SellEase.Api.Records;
 using SellEase.Api.Domain;
 using SellEase.Api.Setup;
@@ -20,6 +21,8 @@ builder.Services.AddScoped<NumberSequences>();
 builder.Services.AddDbContext<AppDbContext>((sp, options) => options
     .UseNpgsql(builder.Configuration.GetConnectionString("Default"))
     .AddInterceptors(sp.GetRequiredService<AuditInterceptor>()));
+
+builder.Services.AddPhotoStore(builder.Configuration, builder.Environment.ContentRootPath);
 
 // ── Sign-in (username or phone number + password, cookie session) ───────────
 builder.Services
@@ -80,6 +83,7 @@ app.MapAdminEndpoints();
 app.MapCustomerEndpoints();
 app.MapFactoryEndpoints();
 app.MapCatalogEndpoints();
+app.MapPhotoEndpoints();
 
 app.Run();
 

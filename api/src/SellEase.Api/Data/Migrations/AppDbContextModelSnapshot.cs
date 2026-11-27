@@ -576,6 +576,41 @@ namespace SellEase.Api.Data.Migrations
                     b.ToTable("DesignMaterials", (string)null);
                 });
 
+            modelBuilder.Entity("SellEase.Api.Domain.DesignPhoto", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("DesignId")
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("StorageKey")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DesignId");
+
+                    b.ToTable("DesignPhotos", (string)null);
+                });
+
             modelBuilder.Entity("SellEase.Api.Domain.Factory", b =>
                 {
                     b.Property<Guid>("Id")
@@ -746,6 +781,15 @@ namespace SellEase.Api.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("SellEase.Api.Domain.DesignPhoto", b =>
+                {
+                    b.HasOne("SellEase.Api.Domain.Design", null)
+                        .WithMany("Photos")
+                        .HasForeignKey("DesignId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("SellEase.Api.Domain.Design", b =>
                 {
                     b.Navigation("Accessories");
@@ -753,6 +797,8 @@ namespace SellEase.Api.Data.Migrations
                     b.Navigation("Colors");
 
                     b.Navigation("Materials");
+
+                    b.Navigation("Photos");
                 });
 #pragma warning restore 612, 618
         }

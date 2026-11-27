@@ -19,12 +19,13 @@ public static class CatalogEndpoints
     public sealed record MaterialDto(Guid? Id, string Name, decimal Surcharge);
     public sealed record ColorDto(Guid? Id, string Name, string Hex);
     public sealed record AccessoryDto(Guid? Id, string Name, decimal Price);
+    public sealed record PhotoDto(Guid Id, string Url);
 
     public sealed record DesignDto(
         Guid Id, string Code, string Name, Guid CategoryId, decimal BasePrice,
         string? Dimensions, string? Wood, string? Description,
         MaterialDto[] Materials, ColorDto[] Colors, AccessoryDto[] Accessories,
-        bool IsActive, uint Version);
+        bool IsActive, uint Version, PhotoDto[] Photos);
 
     public sealed record DesignInput(
         string Code, string Name, Guid CategoryId, decimal BasePrice,
@@ -39,12 +40,15 @@ public static class CatalogEndpoints
         d.Materials.OrderBy(m => m.SortOrder).Select(m => new MaterialDto(m.Id, m.Name, m.Surcharge)).ToArray(),
         d.Colors.OrderBy(c => c.SortOrder).Select(c => new ColorDto(c.Id, c.Name, c.Hex)).ToArray(),
         d.Accessories.OrderBy(a => a.SortOrder).Select(a => new AccessoryDto(a.Id, a.Name, a.Price)).ToArray(),
-        d.IsActive, d.Version);
+        d.IsActive, d.Version,
+        d.Photos.OrderBy(p => p.SortOrder).Select(ToDto).ToArray());
+
+    public static PhotoDto ToDto(DesignPhoto p) => new(p.Id, $"/api/catalog/photos/{p.Id}");
 
     private static bool CanEdit(ClaimsPrincipal user) => Permissions.RolesWith(Permissions.CatalogEdit).Any(user.IsInRole);
 
     private static IQueryable<Design> WithOptions(AppDbContext db) =>
-        db.Designs.Include(d => d.Materials).Include(d => d.Colors).Include(d => d.Accessories).AsSplitQuery();
+        db.Designs.Include(d => d.Materials).Include(d => d.Colors).Include(d => d.Accessories).Include(d => d.Photos).AsSplitQuery();
 
     public static void MapCatalogEndpoints(this IEndpointRouteBuilder app)
     {

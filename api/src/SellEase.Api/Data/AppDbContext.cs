@@ -98,6 +98,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             e.HasMany(x => x.Materials).WithOne().HasForeignKey(x => x.DesignId).OnDelete(DeleteBehavior.Cascade);
             e.HasMany(x => x.Colors).WithOne().HasForeignKey(x => x.DesignId).OnDelete(DeleteBehavior.Cascade);
             e.HasMany(x => x.Accessories).WithOne().HasForeignKey(x => x.DesignId).OnDelete(DeleteBehavior.Cascade);
+            e.HasMany(x => x.Photos).WithOne().HasForeignKey(x => x.DesignId).OnDelete(DeleteBehavior.Cascade);
         });
         b.Entity<DesignMaterial>(e => { e.ToTable("DesignMaterials"); e.Property(x => x.Name).HasMaxLength(100); });
         b.Entity<DesignColor>(e =>
@@ -107,6 +108,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             e.Property(x => x.Hex).HasMaxLength(7);
         });
         b.Entity<DesignAccessory>(e => { e.ToTable("DesignAccessories"); e.Property(x => x.Name).HasMaxLength(100); });
+
+        b.Entity<DesignPhoto>(e =>
+        {
+            e.ToTable("DesignPhotos");
+            e.Property(x => x.StorageKey).HasMaxLength(300);
+            e.Property(x => x.ContentType).HasMaxLength(50);
+        });
 
         b.Entity<AuditEntry>(e =>
         {
