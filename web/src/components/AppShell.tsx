@@ -6,6 +6,7 @@ import {
   ClipboardList,
   LogOut,
   Factory,
+  History,
   Home,
   LayoutGrid,
   Menu,
@@ -13,6 +14,7 @@ import {
   Plus,
   Receipt,
   Search,
+  Settings,
   ShieldCheck,
   Sofa,
   Truck,
@@ -53,6 +55,8 @@ export const navItems: NavItem[] = [
   { href: "/finance/cash-book", key: "cashBook", icon: Wallet, roles: MGMT },
   { href: "/reports/profit-loss", key: "reports", icon: BarChart3, roles: MGMT },
   { href: "/admin/users", key: "users", icon: ShieldCheck, roles: ["admin"] },
+  { href: "/admin/settings", key: "settings", icon: Settings, roles: ["admin"] },
+  { href: "/admin/audit", key: "auditLog", icon: History, roles: ["admin"] },
 ];
 
 function isActive(pathname: string, href: string) {
@@ -88,6 +92,7 @@ function UserMenu({ compact = false }: { compact?: boolean }) {
 
 function Brand({ light = false }: { light?: boolean }) {
   const t = useTranslations("app");
+  const { settings } = useSession();
   return (
     <Link href="/" className="flex items-center gap-2.5">
       <span className={`flex size-9 items-center justify-center rounded-xl ${light ? "bg-white/15" : "bg-brand-700"}`}>
@@ -95,7 +100,7 @@ function Brand({ light = false }: { light?: boolean }) {
       </span>
       <span className="leading-tight">
         <span className={`block text-lg font-semibold ${light ? "text-white" : "text-brand-900"}`}>{t("name")}</span>
-        <span className={`block text-xs ${light ? "text-white/70" : "text-zinc-500"}`}>{t("business")}</span>
+        <span className={`block text-xs ${light ? "text-white/70" : "text-zinc-500"}`}>{settings?.businessName || t("business")}</span>
       </span>
     </Link>
   );

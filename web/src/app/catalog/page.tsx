@@ -1,6 +1,6 @@
 "use client";
 
-import { Pencil, Plus, Search } from "lucide-react";
+import { Pencil, Plus, Search, Tags } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
@@ -48,9 +48,14 @@ export default function CatalogPage() {
         subtitle={t("subtitle")}
         actions={
           canManage && (
-            <LinkButton href="/catalog/edit" variant="secondary">
-              <Plus className="size-4" /> {t("addDesign")}
-            </LinkButton>
+            <span className="flex flex-wrap gap-2">
+              <LinkButton href="/catalog/categories" variant="ghost">
+                <Tags className="size-4" /> {t("manageCategories")}
+              </LinkButton>
+              <LinkButton href="/catalog/edit" variant="secondary">
+                <Plus className="size-4" /> {t("addDesign")}
+              </LinkButton>
+            </span>
           )
         }
       />

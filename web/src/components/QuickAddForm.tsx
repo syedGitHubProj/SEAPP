@@ -10,7 +10,7 @@ export interface QuickField {
   name: string;
   label: string;
   required?: boolean;
-  inputMode?: "text" | "tel";
+  inputMode?: "text" | "tel" | "numeric";
   type?: "text" | "password";
   placeholder?: string;
   hint?: string;

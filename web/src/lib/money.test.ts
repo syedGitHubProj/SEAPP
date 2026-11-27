@@ -10,7 +10,7 @@ describe("formatMoney", () => {
     expect(formatMoney(-95000)).toBe("-Rs. 95,000");
   });
 
-  it("uses the currency code for other currencies", () => {
-    expect(formatMoney(1500, "USD")).toBe("USD 1,500");
+  it("uses the symbol from settings for other currencies", () => {
+    expect(formatMoney(1500, "AED")).toBe("AED 1,500");
   });
 });

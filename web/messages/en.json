@@ -28,7 +28,9 @@
     "users": "Users & roles",
     "more": "More",
     "factories": "Factories",
-    "newSaleShort": "New Sale"
+    "newSaleShort": "New Sale",
+    "settings": "Settings",
+    "auditLog": "Audit log"
   },
   "roles": {
     "salesman": "Salesman",
@@ -55,7 +57,9 @@
     "search": "Search",
     "none": "—",
     "add": "Add",
-    "remove": "Remove"
+    "remove": "Remove",
+    "switchOff": "Switch off",
+    "switchOn": "Switch on"
   },
   "orderStatus": {
     "draft": "Draft",
@@ -205,7 +209,8 @@
     "loadFailed": "Couldn't load the catalogue.",
     "all": "All",
     "edit": "Edit design",
-    "inactiveBadge": "Switched off"
+    "inactiveBadge": "Switched off",
+    "manageCategories": "Categories"
   },
   "customise": {
     "back": "Back to catalogue",
@@ -246,14 +251,11 @@
     "customerName": "Customer name",
     "phone": "Phone",
     "address": "Delivery address",
-    "chooseCustomer": "Choose customer",
-    "chooseCustomerPlaceholder": "Select a customer…",
     "orderItems": "Sale Order items ({count})",
     "addMoreDesigns": "Add more designs",
     "expectedDelivery": "Expected delivery",
     "fillRequired": "Choose a customer and a delivery date to continue.",
-    "saveAndReceive": "Save & receive advance",
-    "loadingCustomers": "Loading customers…"
+    "saveAndReceive": "Save & receive advance"
   },
   "advance": {
     "title": "Receive advance",
@@ -319,7 +321,8 @@
     "editTitle": "Edit customer",
     "searchPlaceholder": "Name, CU number or phone",
     "empty": "No customers found.",
-    "help": "Every role can add and edit customers. Sale Orders and balances appear here from Phase 3."
+    "help": "Every role can add, edit and switch off customers. Records are never deleted. Sale Orders and balances appear here from Phase 3.",
+    "switchOffConfirm": "Switch off {name}? They will be hidden from lists and from new Sale Orders. Their old records stay. You can switch them on again any time."
   },
   "factoryOrders": {
     "title": "Factory orders",
@@ -507,7 +510,8 @@
     "note": "Open orders and amounts owed still come from the sample factory orders until Phase 3.",
     "number": "No.",
     "editTitle": "Edit factory",
-    "empty": "No factories yet."
+    "empty": "No factories yet.",
+    "switchOffConfirm": "Switch off {name}? It will be hidden from new factory orders. Old orders stay. You can switch it on again any time."
   },
   "signIn": {
     "title": "Sign in",
@@ -544,7 +548,8 @@
     "PasswordRequiresDigit": "Password needs a number",
     "PasswordRequiresLower": "Password needs a small letter",
     "PasswordRequiresUpper": "Password needs a capital letter",
-    "PasswordRequiresNonAlphanumeric": "Password needs a symbol"
+    "PasswordRequiresNonAlphanumeric": "Password needs a symbol",
+    "invalid": "Not valid"
   },
   "designEditor": {
     "newTitle": "New design",
@@ -583,5 +588,77 @@
     "makeMain": "Make main photo",
     "removePhoto": "Remove photo",
     "mainPhoto": "Main photo"
+  },
+  "categoryAdmin": {
+    "title": "Catalogue categories",
+    "subtitle": "Groups shown as filters at the top of the catalogue. Managers and Admin can change them.",
+    "back": "Catalogue",
+    "add": "Add category",
+    "addTitle": "New category",
+    "editTitle": "Edit category",
+    "name": "Name",
+    "order": "Position",
+    "orderHint": "Smaller numbers show first, e.g. 10, 20, 30.",
+    "empty": "No categories yet.",
+    "switchOffConfirm": "Switch off {name}? It disappears from the catalogue filters. Its designs stay in the catalogue under \"All\". You can switch it on again any time.",
+    "help": "Categories are never deleted, because designs and old Sale Orders refer to them. Switch one off instead."
+  },
+  "customerPicker": {
+    "label": "Find customer",
+    "placeholder": "Name, CU number or phone",
+    "matches": "Matching customers",
+    "loading": "Loading customers…",
+    "noMatch": "No customer matches. Check the spelling, or add a new customer.",
+    "none": "No customers yet. Add a new customer.",
+    "more": "More customers match. Type more of the name or phone to narrow the list.",
+    "change": "Change"
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Business details shown across the app. Only Admin can change them.",
+    "formTitle": "Business and currency",
+    "businessName": "Business name",
+    "businessNameHint": "Shown under SellEase at the top of every page.",
+    "currencyCode": "Currency code",
+    "currencyCodeHint": "3 capital letters, e.g. PKR.",
+    "currencySymbol": "Currency symbol",
+    "currencySymbolHint": "Shown before every amount, e.g. Rs.",
+    "saved": "Saved. Amounts now show like {example}.",
+    "timeZone": "Time zone",
+    "timeZoneNote": "Dates and weeks (Monday to Sunday) use Pakistan time. This can't be changed here."
+  },
+  "auditLog": {
+    "title": "Audit log",
+    "subtitle": "Who changed what, and when. Nothing here can be edited or deleted.",
+    "kind": "Kind of record",
+    "allKinds": "All records",
+    "who": "Changed by",
+    "everyone": "Everyone",
+    "empty": "Nothing recorded for these filters.",
+    "older": "Show older",
+    "end": "That's everything.",
+    "system": "System",
+    "unknownRecord": "(record not found)",
+    "types": {
+      "Customer": "Customer",
+      "Factory": "Factory",
+      "Design": "Design",
+      "DesignMaterial": "Design material",
+      "DesignColor": "Design colour",
+      "DesignAccessory": "Design accessory",
+      "DesignPhoto": "Design photo",
+      "Category": "Category",
+      "AppUser": "Staff account",
+      "BusinessSettings": "Business settings",
+      "Branch": "Branch"
+    },
+    "actions": {
+      "Added": "Added",
+      "Modified": "Changed",
+      "Deleted": "Removed",
+      "RoleAssigned": "Role given to",
+      "RoleChanged": "Role changed for",
+      "PasswordReset": "Password reset for"
+    }
   }
 }

@@ -4,6 +4,7 @@ import { Pencil, Search, UserPlus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useDeferredValue, useState } from "react";
 import { QuickAddForm } from "@/components/QuickAddForm";
+import { SwitchActiveButton } from "@/components/SwitchActiveButton";
 import { ResponsiveTable } from "@/components/ResponsiveTable";
 import { Badge, Button, LoadState, PageHeader, PrototypeNote } from "@/components/ui";
 import { api, errorKey, useApiQuery } from "@/lib/api";
@@ -18,6 +19,7 @@ export default function CustomersPage() {
   const [query, setQuery] = useState("");
   const [showInactive, setShowInactive] = useState(false);
   const [editing, setEditing] = useState<Editing>(null);
+  const [problem, setProblem] = useState<unknown>(null);
   const deferredQuery = useDeferredValue(query.trim());
 
   const params = new URLSearchParams({ take: "200" });
@@ -69,6 +71,12 @@ export default function CustomersPage() {
         />
       )}
 
+      {problem !== null && (
+        <p role="alert" className="mb-4 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-800">
+          {te(errorKey(problem))}
+        </p>
+      )}
+
       <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center">
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-zinc-400" />
@@ -113,9 +121,26 @@ export default function CustomersPage() {
               label: tc("edit"),
               align: "end",
               render: (c) => (
-                <Button variant="ghost" className="min-h-9 px-2" onClick={() => setEditing({ mode: "edit", customer: c })} aria-label={`${tc("edit")} ${c.name}`}>
-                  <Pencil className="size-4" />
-                </Button>
+                <span className="inline-flex flex-wrap justify-end gap-1">
+                  <Button variant="ghost" className="min-h-9 px-2" onClick={() => setEditing({ mode: "edit", customer: c })} aria-label={`${tc("edit")} ${c.name}`}>
+                    <Pencil className="size-4" />
+                  </Button>
+                  <SwitchActiveButton
+                    name={c.name}
+                    isActive={c.isActive}
+                    confirmText={t("switchOffConfirm", { name: c.name })}
+                    onSwitch={async (isActive) => {
+                      setProblem(null);
+                      try {
+                        // The API reads the fields it knows and ignores the rest (id, number).
+                        await api(`/api/customers/${c.id}`, { method: "PUT", json: { ...c, isActive } });
+                        reload();
+                      } catch (e) {
+                        setProblem(e);
+                      }
+                    }}
+                  />
+                </span>
               ),
             },
           ]}

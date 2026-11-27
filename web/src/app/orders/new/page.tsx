@@ -3,10 +3,9 @@
 import { Plus, UserPlus, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { CustomerPicker } from "@/components/CustomerPicker";
 import { DraftItemRow, OrderSteps } from "@/components/OrderFlow";
 import { Button, Card, LinkButton, Money, PageHeader } from "@/components/ui";
-import { useApiQuery } from "@/lib/api";
-import type { CustomerDto } from "@/lib/api-types";
 import { draftTotal, updateDraft, useDraft } from "@/lib/prototype-store";
 
 const inputClass = "min-h-11 w-full rounded-xl border border-black/10 bg-white px-3 text-sm";
@@ -15,7 +14,6 @@ export default function NewOrderPage() {
   const t = useTranslations("newOrder");
   const router = useRouter();
   const draft = useDraft();
-  const { data: customers } = useApiQuery<CustomerDto[]>("/api/customers?take=200");
   const total = draftTotal(draft);
   const isNewCustomer = draft.newCustomer !== null;
 
@@ -95,26 +93,10 @@ export default function NewOrderPage() {
                 </label>
               </div>
             ) : (
-              <label className="block text-sm">
-                <span className="mb-1 block font-medium">{t("chooseCustomer")} *</span>
-                <select
-                  className={inputClass}
-                  value={draft.customerId ?? ""}
-                  onChange={(e) =>
-                    updateDraft({
-                      customerId: e.target.value || null,
-                      customerName: customers?.find((c) => c.id === e.target.value)?.name ?? null,
-                    })
-                  }
-                >
-                  <option value="">{customers ? t("chooseCustomerPlaceholder") : t("loadingCustomers")}</option>
-                  {(customers ?? []).map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name} — {c.phone}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <CustomerPicker
+                selectedName={draft.customerId ? draft.customerName : null}
+                onSelect={(c) => updateDraft({ customerId: c?.id ?? null, customerName: c?.name ?? null })}
+              />
             )}
           </Card>
 

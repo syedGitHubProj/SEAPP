@@ -1,10 +1,9 @@
 /**
  * Formats an amount for display, e.g. 228000 -> "Rs. 228,000".
- * Currency comes from settings later; PKR is the default.
+ * The symbol comes from the business settings (useMoney in session.tsx); "Rs." is the default.
  */
-export function formatMoney(amount: number, currency = "PKR"): string {
+export function formatMoney(amount: number, symbol = "Rs."): string {
   const sign = amount < 0 ? "-" : "";
   const whole = Math.round(Math.abs(amount)).toLocaleString("en-US");
-  const prefix = currency === "PKR" ? "Rs." : currency;
-  return `${sign}${prefix} ${whole}`;
+  return `${sign}${symbol} ${whole}`;
 }

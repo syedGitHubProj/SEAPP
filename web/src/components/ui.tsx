@@ -1,6 +1,5 @@
 import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
-import { formatMoney } from "@/lib/money";
 
 const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
 
@@ -99,9 +98,7 @@ export function StatCard({
   );
 }
 
-export function Money({ amount, className }: { amount: number; className?: string }) {
-  return <span className={cx("tabular-nums whitespace-nowrap", className)}>{formatMoney(amount)}</span>;
-}
+export { Money } from "./Money";
 
 export function PrototypeNote({ children }: { children: ReactNode }) {
   return (

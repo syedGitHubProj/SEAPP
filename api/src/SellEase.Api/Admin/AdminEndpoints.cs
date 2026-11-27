@@ -16,19 +16,88 @@ public static partial class AdminEndpoints
     public sealed record SetRoleRequest(string Role);
     public sealed record ResetPasswordRequest(string Password);
     public sealed record SettingsDto(string BusinessName, string CurrencyCode, string CurrencySymbol, string TimeZone);
-    public sealed record AuditDto(DateTimeOffset At, string? UserName, string Action, string EntityType, string EntityId, string? Changes);
+    /// <summary>One audit row. <c>Label</c> is a readable name for the record (e.g. "CU-000012 Ahmed Raza"), when known.</summary>
+    public sealed record AuditDto(Guid Id, DateTimeOffset At, string? UserName, string Action, string EntityType, string EntityId, string? Label, string? Changes);
 
     public static void MapAdminEndpoints(this IEndpointRouteBuilder app)
     {
         MapUsers(app.MapGroup("/api/admin/users").RequireAuthorization(Permissions.UsersManage));
         MapSettings(app);
 
-        app.MapGet("/api/admin/audit", async (AppDbContext db, int? take) =>
-            await db.AuditEntries.OrderByDescending(a => a.At)
-                .Take(Math.Clamp(take ?? 100, 1, 500))
-                .Select(a => new AuditDto(a.At, a.UserName, a.Action, a.EntityType, a.EntityId, a.Changes))
-                .ToListAsync())
-            .RequireAuthorization(Permissions.AuditView);
+        app.MapGet("/api/admin/audit", ListAuditAsync).RequireAuthorization(Permissions.AuditView);
+    }
+
+    /// <summary>
+    /// Newest first. <paramref name="before"/> pages backwards ("show older"); <paramref name="entityType"/>
+    /// limits the list to one kind of record (a design's options and photos count as the design).
+    /// </summary>
+    private static async Task<List<AuditDto>> ListAuditAsync(
+        AppDbContext db, int? take, DateTimeOffset? before, string? entityType, string? userName)
+    {
+        var query = db.AuditEntries.AsNoTracking();
+        if (before is not null) query = query.Where(a => a.At < before);
+        if (!string.IsNullOrWhiteSpace(entityType))
+        {
+            string[] types = entityType == nameof(Design)
+                ? [nameof(Design), nameof(DesignMaterial), nameof(DesignColor), nameof(DesignAccessory), nameof(DesignPhoto)]
+                : [entityType];
+            query = query.Where(a => types.Contains(a.EntityType));
+        }
+        if (!string.IsNullOrWhiteSpace(userName)) query = query.Where(a => a.UserName == userName.Trim());
+
+        var rows = await query.OrderByDescending(a => a.At).ThenByDescending(a => a.Id)
+            .Take(Math.Clamp(take ?? 100, 1, 500)).ToListAsync();
+        var labels = await AuditLabelsAsync(db, rows);
+        return rows.Select(a => new AuditDto(a.Id, a.At, a.UserName, a.Action, a.EntityType, a.EntityId,
+            labels.GetValueOrDefault((a.EntityType, a.EntityId)), a.Changes)).ToList();
+    }
+
+    /// <summary>Readable names for the records in a page of audit rows, looked up in a few small queries.</summary>
+    private static async Task<Dictionary<(string, string), string>> AuditLabelsAsync(AppDbContext db, List<AuditEntry> rows)
+    {
+        Guid[] IdsOf(params string[] types) => rows.Where(r => types.Contains(r.EntityType))
+            .Select(r => Guid.TryParse(r.EntityId, out var g) ? g : Guid.Empty).Where(g => g != Guid.Empty).Distinct().ToArray();
+
+        var labels = new Dictionary<(string, string), string>();
+        void Add(string type, Guid id, string label) => labels[(type, id.ToString())] = label;
+
+        var ids = IdsOf(nameof(Customer));
+        foreach (var c in await db.Customers.Where(c => ids.Contains(c.Id)).Select(c => new { c.Id, c.Number, c.Name }).ToListAsync())
+            Add(nameof(Customer), c.Id, $"{c.Number} {c.Name}");
+
+        ids = IdsOf(nameof(Factory));
+        foreach (var f in await db.Factories.Where(f => ids.Contains(f.Id)).Select(f => new { f.Id, f.Number, f.Name }).ToListAsync())
+            Add(nameof(Factory), f.Id, $"{f.Number} {f.Name}");
+
+        ids = IdsOf(nameof(Category));
+        foreach (var c in await db.Categories.Where(c => ids.Contains(c.Id)).Select(c => new { c.Id, c.Name }).ToListAsync())
+            Add(nameof(Category), c.Id, c.Name);
+
+        ids = IdsOf(nameof(AppUser));
+        foreach (var u in await db.Users.Where(u => ids.Contains(u.Id)).Select(u => new { u.Id, u.FullName, u.UserName }).ToListAsync())
+            Add(nameof(AppUser), u.Id, $"{u.FullName} ({u.UserName})");
+
+        // A design's options and photos are named after the design they belong to.
+        var optionIds = IdsOf(nameof(DesignMaterial), nameof(DesignColor), nameof(DesignAccessory));
+        var options = (await db.Set<DesignMaterial>().Where(o => optionIds.Contains(o.Id)).Select(o => new { o.Id, o.DesignId, o.Name }).ToListAsync())
+            .Concat(await db.Set<DesignColor>().Where(o => optionIds.Contains(o.Id)).Select(o => new { o.Id, o.DesignId, o.Name }).ToListAsync())
+            .Concat(await db.Set<DesignAccessory>().Where(o => optionIds.Contains(o.Id)).Select(o => new { o.Id, o.DesignId, o.Name }).ToListAsync())
+            .ToList();
+        var photoIds = IdsOf(nameof(DesignPhoto));
+        var photos = await db.Set<DesignPhoto>().Where(p => photoIds.Contains(p.Id)).Select(p => new { p.Id, p.DesignId }).ToListAsync();
+
+        var designIds = IdsOf(nameof(Design)).Concat(options.Select(o => o.DesignId)).Concat(photos.Select(p => p.DesignId)).Distinct().ToArray();
+        var designs = await db.Designs.Where(d => designIds.Contains(d.Id)).ToDictionaryAsync(d => d.Id, d => $"{d.Code} {d.Name}");
+        foreach (var (id, label) in designs) Add(nameof(Design), id, label);
+        foreach (var r in rows.Where(r => r.EntityType is nameof(DesignMaterial) or nameof(DesignColor) or nameof(DesignAccessory)))
+        {
+            var option = options.FirstOrDefault(o => o.Id.ToString() == r.EntityId);
+            if (option is not null) labels[(r.EntityType, r.EntityId)] = $"{designs.GetValueOrDefault(option.DesignId, "?")} · {option.Name}";
+        }
+        foreach (var p in photos)
+            Add(nameof(DesignPhoto), p.Id, designs.GetValueOrDefault(p.DesignId, "?"));
+
+        return labels;
     }
 
     private static void MapUsers(RouteGroupBuilder users)

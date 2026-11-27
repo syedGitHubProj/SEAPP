@@ -32,12 +32,11 @@ import {
   weekKpis,
 } from "@/data/sample";
 import { closingCash, profitAndLoss } from "@/lib/finance";
-import { formatMoney } from "@/lib/money";
 import { useApiQuery } from "@/lib/api";
 import type { CategoryDto, DesignDto } from "@/lib/api-types";
 import { artFor } from "@/lib/catalog";
 import { usePurchaseOrders, useSalesOrders } from "@/lib/prototype-store";
-import { useRole, useSession } from "@/lib/session";
+import { useMoney, useRole, useSession } from "@/lib/session";
 import { linkedSalesOrders, purchaseOrderTotal, salesOrderTotal } from "@/lib/purchasing";
 
 function ActionTile({ href, icon, title, hint, tone }: { href: string; icon: ReactNode; title: string; hint?: string; tone: string }) {
@@ -111,13 +110,14 @@ function SalesmanHome() {
 
 function ManagerDashboard() {
   const t = useTranslations("dashboard");
+  const money = useMoney();
   const late = usePurchaseOrders().filter((p) => p.status === "late");
   return (
     <>
       <PageHeader title={t("manager.title")} subtitle={t("manager.subtitle")} />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard icon={<ShoppingCart className="size-5" />} value={formatMoney(weekKpis.sales)} label={t("manager.salesWeek")} />
-        <StatCard icon={<Wallet className="size-5" />} value={formatMoney(weekKpis.collections)} label={t("manager.collections")} tone="blue" />
+        <StatCard icon={<ShoppingCart className="size-5" />} value={money(weekKpis.sales)} label={t("manager.salesWeek")} />
+        <StatCard icon={<Wallet className="size-5" />} value={money(weekKpis.collections)} label={t("manager.collections")} tone="blue" />
         <StatCard icon={<Factory className="size-5" />} value={String(weekKpis.openFactoryOrders)} label={t("manager.factoryOrders")} tone="amber" />
         <StatCard icon={<Truck className="size-5" />} value={String(weekKpis.pendingDeliveries)} label={t("manager.pendingDeliveries")} tone="purple" />
       </div>
@@ -158,6 +158,7 @@ function ManagerDashboard() {
 
 function AdminDashboard() {
   const t = useTranslations("dashboard");
+  const money = useMoney();
   const ta = useTranslations("audit");
   const pnl = profitAndLoss(monthlyPnl);
   const receivables = customers.reduce((s, c) => s + c.balance, 0);
@@ -167,10 +168,10 @@ function AdminDashboard() {
     <>
       <PageHeader title={t("admin.title")} subtitle={t("admin.subtitle")} />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard icon={<BarChart3 className="size-5" />} value={formatMoney(pnl.netOperatingProfit)} label={t("admin.netProfitMonth")} />
-        <StatCard icon={<HandCoins className="size-5" />} value={formatMoney(receivables)} label={t("admin.receivables")} tone="amber" />
-        <StatCard icon={<Factory className="size-5" />} value={formatMoney(payables)} label={t("admin.payables")} tone="red" />
-        <StatCard icon={<Wallet className="size-5" />} value={formatMoney(cash)} label={t("admin.cashToday")} tone="blue" />
+        <StatCard icon={<BarChart3 className="size-5" />} value={money(pnl.netOperatingProfit)} label={t("admin.netProfitMonth")} />
+        <StatCard icon={<HandCoins className="size-5" />} value={money(receivables)} label={t("admin.receivables")} tone="amber" />
+        <StatCard icon={<Factory className="size-5" />} value={money(payables)} label={t("admin.payables")} tone="red" />
+        <StatCard icon={<Wallet className="size-5" />} value={money(cash)} label={t("admin.cashToday")} tone="blue" />
       </div>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">

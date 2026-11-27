@@ -88,3 +88,24 @@ export interface UserDto {
   role: ApiRole;
   isActive: boolean;
 }
+
+export interface SettingsDto {
+  businessName: string;
+  currencyCode: string;
+  currencySymbol: string;
+  timeZone: string;
+}
+
+export interface AuditDto {
+  id: string;
+  at: string;
+  userName: string | null;
+  /** Added, Modified, Deleted, or a named action such as PasswordReset. */
+  action: string;
+  entityType: string;
+  entityId: string;
+  /** A readable name for the record, e.g. "CU-000012 Ahmed Raza". */
+  label: string | null;
+  /** JSON describing the change. */
+  changes: string | null;
+}

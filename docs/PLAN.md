@@ -177,10 +177,16 @@ Work is committed directly to `main` for now, with no pull requests (owner's dec
   - a sign-in page
   - the customers, factories and catalogue pages read from and save to the API
   - the role switcher is replaced by the real signed-in user
-- **2e. Going online (built; waiting for the owner's server setup, see `docs/deploy/STAGING.md`):**
+- **2e. Going online (done; staging is live at abc-staging.selease.com):**
   - Docker images, Caddy, and `deploy.yml`
   - the manual `migrate.yml`
   - a step-by-step guide for the owner to set up the Droplet, DNS and secrets
+- **2f. Missing screens (done, 2026-11-27):**
+  - a switch-off/on button for customers and factories
+  - catalogue categories: add, rename, reorder, switch off (`/catalog/categories`, Manager and Admin)
+  - settings: business name and currency (`/admin/settings`, Admin); amounts and the header use them
+  - the audit log viewer (`/admin/audit`, Admin), filtered by kind of record and by person
+  - a search box replaces the customer drop-down on a new Sale Order, so it works with any number of customers
 
 *Checkpoint:* the owner creates the Droplet, the Spaces bucket and the GitHub secrets (step-by-step guide provided). Staging goes live with real sign-in.
 

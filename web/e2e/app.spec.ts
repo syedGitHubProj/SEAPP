@@ -45,7 +45,9 @@ test("salesman creates a Sale Order, then a linked factory order", async ({ page
   await expect(page).toHaveURL(/\/orders\/new$/);
   const next = page.getByRole("button", { name: "Save & receive advance" });
   await expect(next).toBeDisabled();
-  await page.getByRole("combobox", { name: /Choose customer/ }).selectOption({ label: "Mr. Imran Khan — 0321-4567890" });
+  await page.getByRole("searchbox", { name: /Find customer/ }).fill("4567890");
+  await page.getByRole("list", { name: "Matching customers" }).getByRole("button", { name: /Mr\. Imran Khan/ }).click();
+  await expect(page.getByRole("button", { name: "Change" })).toBeVisible();
   await page.getByLabel(/Expected delivery/).fill("2026-12-20");
   await next.click();
 
@@ -125,7 +127,32 @@ test("salesman adds and edits a customer; numbers are given by the server", asyn
 
   await page.goto("/catalog/LV-402");
   await page.getByRole("button", { name: "Add to Sale Order" }).click();
-  await expect(page.getByRole("combobox", { name: /Choose customer/ }).getByRole("option", { name: new RegExp(name) })).toHaveCount(1);
+  await page.getByRole("searchbox", { name: /Find customer/ }).fill(name);
+  await expect(page.getByRole("list", { name: "Matching customers" }).getByRole("button", { name: new RegExp(name) })).toHaveCount(1);
+});
+
+test("a switched-off customer is hidden from lists and new Sale Orders until switched on", async ({ page }) => {
+  const name = unique("Aa Leaver");
+  const created = await page.request.post("/api/customers", { data: { name, phone: randomPhone() } });
+  expect(created.ok()).toBeTruthy();
+
+  await page.goto("/customers");
+  await page.getByRole("searchbox", { name: "Search", exact: true }).fill(name);
+  page.once("dialog", (d) => void d.accept());
+  await page.getByRole("button", { name: `Switch off: ${name}` }).filter({ visible: true }).click();
+  await expect(page.getByText("No customers found.").filter({ visible: true })).toBeVisible();
+
+  await page.goto("/catalog/LV-402");
+  await page.getByRole("button", { name: "Add to Sale Order" }).click();
+  await page.getByRole("searchbox", { name: /Find customer/ }).fill(name);
+  await expect(page.getByText("No customer matches.", { exact: false })).toBeVisible();
+
+  await page.goto("/customers");
+  await page.getByRole("searchbox", { name: "Search", exact: true }).fill(name);
+  await page.getByLabel("Show switched-off records").check();
+  await page.getByRole("button", { name: `Switch on: ${name}` }).filter({ visible: true }).click();
+  await page.getByLabel("Show switched-off records").uncheck();
+  await expect(page.getByRole("button", { name: `Switch off: ${name}` }).filter({ visible: true })).toBeVisible();
 });
 
 test("salesman can't add designs or manage factories", async ({ page }) => {
@@ -162,6 +189,39 @@ test.describe("as manager", () => {
 
     await page.goto("/factory-orders/new?so=SO-000144");
     await page.getByRole("combobox", { name: /^Factory/ }).selectOption(name);
+
+    // Switched off, it is no longer offered for new factory orders.
+    await page.goto("/factories");
+    page.once("dialog", (d) => void d.accept());
+    await page.getByRole("button", { name: `Switch off: ${name}` }).filter({ visible: true }).click();
+    await expect(page.getByText(name).filter({ visible: true })).toHaveCount(0);
+    await page.goto("/factory-orders/new?so=SO-000144");
+    await expect(page.getByRole("combobox", { name: /^Factory/ }).getByRole("option", { name })).toHaveCount(0);
+  });
+
+  test("adds, renames and switches off a catalogue category", async ({ page }) => {
+    const name = unique("Outdoor");
+    await page.goto("/catalog");
+    await page.getByRole("link", { name: "Categories" }).click();
+    await expect(page.getByRole("heading", { name: "Catalogue categories", level: 1 })).toBeVisible();
+    await page.getByRole("button", { name: "Add category" }).click();
+    await page.getByLabel(/^Name/).fill(name);
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByText(name).filter({ visible: true })).toBeVisible();
+
+    await page.getByRole("button", { name: `Edit ${name}` }).filter({ visible: true }).click();
+    await page.getByLabel(/^Name/).fill(`${name} Garden`);
+    await page.getByRole("button", { name: "Save" }).click();
+    await page.goto("/catalog");
+    await expect(page.getByRole("button", { name: new RegExp(`${name} Garden`) })).toBeVisible();
+
+    await page.goto("/catalog/categories");
+    page.once("dialog", (d) => void d.accept());
+    await page.getByRole("button", { name: `Switch off: ${name} Garden` }).filter({ visible: true }).click();
+    await expect(page.getByRole("button", { name: `Switch on: ${name} Garden` }).filter({ visible: true })).toBeVisible();
+    await page.goto("/catalog");
+    await expect(page.getByRole("heading", { name: "Furniture catalogue" })).toBeVisible();
+    await expect(page.getByRole("button", { name: new RegExp(`${name} Garden`) })).toHaveCount(0);
   });
 
   test("adds a design with options and a photo, and a salesman can sell it", async ({ page, browser }) => {
@@ -206,9 +266,11 @@ test.describe("as manager", () => {
     await expect(page.getByText("That name or code is already used.")).toBeVisible();
   });
 
-  test("can't open staff accounts", async ({ page }) => {
-    await page.goto("/admin/users");
-    await expect(page.getByText("Your role isn't allowed to do this.")).toBeVisible();
+  test("can't open staff accounts, settings or the audit log", async ({ page }) => {
+    for (const path of ["/admin/users", "/admin/settings", "/admin/audit"]) {
+      await page.goto(path);
+      await expect(page.getByText("Your role isn't allowed to do this.")).toBeVisible();
+    }
   });
 });
 
@@ -224,6 +286,34 @@ test.describe("as admin", () => {
     await expect(page.getByRole("button", { name: "Add factory" })).toBeVisible();
     await page.goto("/orders");
     await expect(page.getByRole("link", { name: "New Sale Order" }).filter({ visible: true }).first()).toBeVisible();
+  });
+
+  test("settings check the currency code and save", async ({ page }) => {
+    // Saves the same values back, so tests running at the same time still see "Rs.".
+    await page.goto("/admin/settings");
+    const code = page.getByLabel(/^Currency code/);
+    await expect(code).toHaveValue("PKR");
+    await code.fill("rupees");
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByText("Not valid")).toBeVisible();
+    await code.fill("PKR");
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByText("Saved. Amounts now show like Rs. 228,000.")).toBeVisible();
+    await expect(page.getByText("Asia/Karachi")).toBeVisible();
+  });
+
+  test("the audit log shows who changed a customer", async ({ page }) => {
+    const name = unique("Audited Buyer");
+    const created = await page.request.post("/api/customers", { data: { name, phone: randomPhone() } });
+    expect(created.ok()).toBeTruthy();
+
+    await page.goto("/admin/audit");
+    await page.getByLabel("Kind of record").selectOption("Customer");
+    await page.getByLabel("Changed by").selectOption(staff.admin.userName);
+    const entry = page.getByRole("listitem").filter({ hasText: name }).first();
+    await expect(entry).toContainText("Added Customer");
+    await expect(entry).toContainText(/CU-\d{6}/);
+    await expect(entry).toContainText(staff.admin.userName);
   });
 
   test("creates a staff account that can then sign in", async ({ page, browser }) => {
@@ -257,6 +347,9 @@ const listPages = [
   ["/deliveries", "Deliveries"],
   ["/expenses", "Expenses"],
   ["/admin/users", "Users & roles"],
+  ["/admin/settings", "Settings"],
+  ["/admin/audit", "Audit log"],
+  ["/catalog/categories", "Catalogue categories"],
 ] as const;
 
 test.describe("layout", () => {
