@@ -6,17 +6,19 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { OrderSteps } from "@/components/OrderFlow";
 import { Button, Card, LinkButton, Money, PageHeader } from "@/components/ui";
-import { findDesign, nextOrderSequence } from "@/data/sample";
+import { nextOrderSequence } from "@/data/sample";
+import { api, errorKey } from "@/lib/api";
+import type { CustomerDto } from "@/lib/api-types";
 import { balanceDue, formatOrderNumber } from "@/lib/orders";
 import {
+  draftItemOptions,
   draftTotal,
-  listUnitPrice,
   placeOrder,
-  useCustomers,
   useDraft,
   usePlacedSalesOrders,
   type PaymentMethod,
 } from "@/lib/prototype-store";
+import { useSession } from "@/lib/session";
 
 const methods: { id: PaymentMethod; icon: typeof Banknote }[] = [
   { id: "cash", icon: Banknote },
@@ -26,13 +28,14 @@ const methods: { id: PaymentMethod; icon: typeof Banknote }[] = [
 
 export default function ReceiveAdvancePage() {
   const t = useTranslations("advance");
-  const tm = useTranslations("materials");
-  const tacc = useTranslations("accessories");
+  const te = useTranslations("errors");
   const router = useRouter();
   const draft = useDraft();
   const placed = usePlacedSalesOrders();
-  const customers = useCustomers();
+  const { user } = useSession();
   const total = draftTotal(draft);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<unknown>(null);
 
   const [amountText, setAmountText] = useState("");
   const [method, setMethod] = useState<PaymentMethod>("cash");
@@ -51,30 +54,43 @@ export default function ReceiveAdvancePage() {
     );
   }
 
-  const record = () => {
-    const customerName = draft.newCustomer?.name ?? customers.find((c) => c.id === draft.customerId)?.name ?? "";
-    // The sales order keeps a snapshot of each line: design, options and agreed price.
+  const record = async () => {
+    setSaving(true);
+    setSaveError(null);
+    let customerName = draft.customerName ?? "";
+    try {
+      // A customer typed in during the order is saved to the real customer list first.
+      if (draft.newCustomer) {
+        const created = await api<CustomerDto>("/api/customers", { method: "POST", json: draft.newCustomer });
+        customerName = created.name;
+      }
+    } catch (e) {
+      setSaveError(e);
+      setSaving(false);
+      return;
+    }
+    // The Sale Order keeps a snapshot of each line: design, options and agreed price.
+    // Until Phase 3 it is kept in this browser only.
     placeOrder({
       number: orderNumber,
       customer: customerName,
       date: new Date().toISOString().slice(0, 10),
       lines: draft.items.map((i, index) => {
-        const design = findDesign(i.designCode);
-        const options = [tm(i.materialId), ...i.accessoryIds.map((id) => tacc(id))].join(", ");
+        const options = draftItemOptions(i);
         return {
           id: String(index + 1),
           designCode: i.designCode,
-          description: `${design?.name ?? i.designCode} — ${options}`,
+          description: options ? `${i.designName} — ${options}` : i.designName,
           quantity: i.quantity,
-          listUnitPrice: listUnitPrice(i),
+          listUnitPrice: i.listUnitPrice,
           agreedUnitPrice: i.agreedUnitPrice,
         };
       }),
       paid: amount,
       status: "confirmed",
       deliveryDate: draft.deliveryDate,
-      salesman: "Ali",
-    }, draft.newCustomer);
+      salesman: user?.fullName ?? "",
+    });
     router.push("/orders/new/done");
   };
 
@@ -135,8 +151,13 @@ export default function ReceiveAdvancePage() {
           <div className="flex justify-between font-semibold"><dt>{t("balance")}</dt><dd><Money amount={balanceDue(total, amount)} /></dd></div>
         </dl>
 
-        <Button className="mt-5 w-full" disabled={!valid} onClick={record}>
-          {t("recordPayment")}
+        {saveError !== null && (
+          <p role="alert" className="mt-4 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-800">
+            {te(errorKey(saveError))}
+          </p>
+        )}
+        <Button className="mt-5 w-full" disabled={!valid || saving} onClick={() => void record()}>
+          {saving && draft.newCustomer ? t("savingCustomer") : t("recordPayment")}
         </Button>
       </Card>
     </>

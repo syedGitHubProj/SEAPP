@@ -7,7 +7,8 @@ import { ResponsiveTable } from "@/components/ResponsiveTable";
 import { OrderStatusBadge, PaymentStatusBadge } from "@/components/StatusBadge";
 import { LinkButton, Money, PageHeader, PrototypeNote } from "@/components/ui";
 import { balanceDue, paymentStatus } from "@/lib/orders";
-import { useRole, useSalesOrders } from "@/lib/prototype-store";
+import { useSalesOrders } from "@/lib/prototype-store";
+import { useRole } from "@/lib/session";
 import { salesOrderTotal } from "@/lib/purchasing";
 
 export default function OrdersPage() {

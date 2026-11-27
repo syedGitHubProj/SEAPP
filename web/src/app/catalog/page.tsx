@@ -1,32 +1,44 @@
 "use client";
 
-import { Plus, Search } from "lucide-react";
+import { Pencil, Plus, Search } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
-import { DesignArt } from "@/components/DesignArt";
+import { useMemo, useState } from "react";
+import { DesignImage } from "@/components/DesignArt";
 import { OrderSteps, OrderSummaryPanel } from "@/components/OrderFlow";
-import { Button, Card, LinkButton, Money, PageHeader } from "@/components/ui";
-import { categories, designs, type Category } from "@/data/sample";
-import { useDraft, useRole } from "@/lib/prototype-store";
+import { Badge, Card, LinkButton, LoadState, Money, PageHeader } from "@/components/ui";
+import { errorKey, useApiQuery } from "@/lib/api";
+import type { CategoryDto, DesignDto } from "@/lib/api-types";
+import { artFor } from "@/lib/catalog";
+import { useDraft } from "@/lib/prototype-store";
+import { useCan } from "@/lib/session";
 
 export default function CatalogPage() {
   const t = useTranslations("catalog");
-  const tc = useTranslations("categories");
+  const tc = useTranslations("common");
+  const te = useTranslations("errors");
   const draft = useDraft();
-  const role = useRole();
-  const canManage = role === "manager" || role === "admin";
+  const canManage = useCan("catalog.edit");
   const [query, setQuery] = useState("");
-  const [category, setCategory] = useState<Category | "all">("all");
+  const [category, setCategory] = useState<string>("all");
+  const [showInactive, setShowInactive] = useState(false);
 
+  const categories = useApiQuery<CategoryDto[]>("/api/catalog/categories");
+  const designs = useApiQuery<DesignDto[]>(`/api/catalog/designs${showInactive ? "?includeInactive=true" : ""}`);
+  const categoryName = useMemo(() => new Map((categories.data ?? []).map((c) => [c.id, c.name])), [categories.data]);
+
+  const all = designs.data ?? [];
   const q = query.trim().toLowerCase();
-  const shown = designs.filter(
+  const shown = all.filter(
     (d) =>
-      (category === "all" || d.category === category) &&
-      (q === "" || d.name.toLowerCase().includes(q) || d.code.toLowerCase().includes(q)),
+      (category === "all" || d.categoryId === category) &&
+      (q === "" ||
+        d.name.toLowerCase().includes(q) ||
+        d.code.toLowerCase().includes(q) ||
+        (categoryName.get(d.categoryId) ?? "").toLowerCase().includes(q)),
   );
-
-  const countFor = (c: Category | "all") => (c === "all" ? designs.length : designs.filter((d) => d.category === c).length);
+  const countFor = (id: string) => (id === "all" ? all.length : all.filter((d) => d.categoryId === id).length);
+  const failed = designs.error ?? categories.error;
 
   return (
     <>
@@ -36,13 +48,12 @@ export default function CatalogPage() {
         subtitle={t("subtitle")}
         actions={
           canManage && (
-            <Button variant="secondary" disabled title={t("addDesignLater")}>
+            <LinkButton href="/catalog/edit" variant="secondary">
               <Plus className="size-4" /> {t("addDesign")}
-            </Button>
+            </LinkButton>
           )
         }
       />
-      {canManage && <p className="-mt-3 mb-4 text-xs text-zinc-500">{t("addDesignLater")}</p>}
 
       <div className="lg:grid lg:grid-cols-[1fr_20rem] lg:gap-6">
         <div className="min-w-0">
@@ -59,36 +70,75 @@ export default function CatalogPage() {
           </div>
 
           <div className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1" role="group" aria-label={t("categories")}>
-            {(["all", ...categories] as const).map((c) => (
+            {[{ id: "all", name: t("all") }, ...(categories.data ?? [])].map((c) => (
               <button
-                key={c}
+                key={c.id}
                 type="button"
-                aria-pressed={category === c}
-                onClick={() => setCategory(c)}
+                aria-pressed={category === c.id}
+                onClick={() => setCategory(c.id)}
                 className={`min-h-9 shrink-0 rounded-full px-4 text-sm font-medium ${
-                  category === c ? "bg-brand-700 text-white" : "border border-black/10 bg-white text-zinc-700"
+                  category === c.id ? "bg-brand-700 text-white" : "border border-black/10 bg-white text-zinc-700"
                 }`}
               >
-                {tc(c)} <span className="opacity-70">({countFor(c)})</span>
+                {c.name} <span className="opacity-70">({countFor(c.id)})</span>
               </button>
             ))}
           </div>
 
-          {shown.length === 0 ? (
+          {canManage && (
+            <label className="mb-4 flex min-h-10 items-center gap-2 text-sm text-zinc-700">
+              <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} className="size-5 accent-brand-700" />
+              {tc("showInactive")}
+            </label>
+          )}
+
+          {designs.data === undefined || failed ? (
+            <LoadState
+              loading={designs.loading}
+              error={failed}
+              onRetry={() => {
+                designs.reload();
+                categories.reload();
+              }}
+              loadingText={tc("loading")}
+              errorText={`${t("loadFailed")} ${te(errorKey(failed))}`}
+              retryText={tc("retry")}
+            />
+          ) : shown.length === 0 ? (
             <Card className="p-6 text-center text-sm text-zinc-500">{t("noResults")}</Card>
           ) : (
             <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
               {shown.map((d) => (
-                <li key={d.code}>
+                <li key={d.id}>
                   <Card className="flex h-full flex-col overflow-hidden">
-                    <DesignArt category={d.category} className="aspect-[4/3]" />
+                    <DesignImage
+                      photoUrl={d.photos[0]?.url}
+                      category={artFor(categoryName.get(d.categoryId))}
+                      alt={d.name}
+                      className="aspect-[4/3] w-full"
+                    />
                     <div className="flex flex-1 flex-col p-3">
                       <h2 className="text-sm font-semibold">{d.name}</h2>
-                      <p className="text-xs text-zinc-500">{d.code}</p>
-                      <Money amount={d.price} className="mt-1 text-sm font-semibold text-brand-800" />
-                      <LinkButton href={`/catalog/${d.code}`} className="mt-3 min-h-9 w-full" aria-label={t("selectDesign", { name: d.name })}>
-                        {t("select")}
-                      </LinkButton>
+                      <p className="text-xs text-zinc-500">
+                        {d.code} {!d.isActive && <Badge>{t("inactiveBadge")}</Badge>}
+                      </p>
+                      <Money amount={d.basePrice} className="mt-1 text-sm font-semibold text-brand-800" />
+                      <div className="mt-auto flex gap-2 pt-3">
+                        {d.isActive && (
+                          <LinkButton href={`/catalog/${d.code}`} className="min-h-9 flex-1" aria-label={t("selectDesign", { name: d.name })}>
+                            {t("select")}
+                          </LinkButton>
+                        )}
+                        {canManage && (
+                          <Link
+                            href={`/catalog/edit?code=${encodeURIComponent(d.code)}`}
+                            aria-label={`${t("edit")} ${d.code}`}
+                            className="flex min-h-9 min-w-9 items-center justify-center rounded-xl border border-black/10 text-brand-800 hover:bg-brand-50"
+                          >
+                            <Pencil className="size-4" />
+                          </Link>
+                        )}
+                      </div>
                     </div>
                   </Card>
                 </li>

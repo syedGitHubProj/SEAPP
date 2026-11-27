@@ -4,12 +4,14 @@
     "business": "ABC Furniture"
   },
   "shell": {
-    "viewingAs": "Viewing as",
     "mainNav": "Main menu",
-    "prototypeBanner": "Prototype with sample data. Nothing is saved to a server.",
+    "prototypeBanner": "Customers, factories, the catalogue and staff accounts are saved for real. Sale Orders, factory orders and finance still show sample data until Phase 3.",
     "searchPlaceholder": "Search sale orders, customers or designs",
     "notifications": "Notifications",
-    "close": "Close"
+    "close": "Close",
+    "signedInAs": "Signed in as {name}",
+    "signOut": "Sign out",
+    "checking": "Checking your sign-in…"
   },
   "nav": {
     "home": "Home",
@@ -41,7 +43,19 @@
     "amount": "Amount",
     "comingLater": "Coming in a later phase",
     "save": "Save",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "loading": "Loading…",
+    "retry": "Try again",
+    "active": "Active",
+    "inactive": "Switched off",
+    "showInactive": "Show switched-off records",
+    "saving": "Saving…",
+    "saved": "Saved",
+    "search": "Search",
+    "none": "—",
+    "add": "Add",
+    "remove": "Remove"
   },
   "orderStatus": {
     "draft": "Draft",
@@ -188,7 +202,10 @@
     "itemsInOrder": "{count, plural, one {# item} other {# items}} in this Sale Order",
     "continue": "Continue →",
     "addDesign": "Add design",
-    "addDesignLater": "Managers and Admin add and edit designs, prices and photos. This arrives in Phase 2."
+    "loadFailed": "Couldn't load the catalogue.",
+    "all": "All",
+    "edit": "Edit design",
+    "inactiveBadge": "Switched off"
   },
   "customise": {
     "back": "Back to catalogue",
@@ -209,7 +226,9 @@
     "catalogPrice": "Catalogue price (per piece)",
     "agreedPrice": "Agreed selling price (per piece)",
     "agreedPriceHint": "The price agreed with the customer. Change it if you give a discount.",
-    "discount": "Discount from catalogue"
+    "discount": "Discount from catalogue",
+    "notFound": "This design isn't in the catalogue (it may have been switched off).",
+    "editDesign": "Edit design"
   },
   "newOrder": {
     "title": "New Sale Order",
@@ -233,7 +252,8 @@
     "addMoreDesigns": "Add more designs",
     "expectedDelivery": "Expected delivery",
     "fillRequired": "Choose a customer and a delivery date to continue.",
-    "saveAndReceive": "Save & receive advance"
+    "saveAndReceive": "Save & receive advance",
+    "loadingCustomers": "Loading customers…"
   },
   "advance": {
     "title": "Receive advance",
@@ -252,7 +272,8 @@
     "notes": "Notes (optional)",
     "advanceReceived": "Advance received",
     "balance": "Balance",
-    "recordPayment": "Record payment"
+    "recordPayment": "Record payment",
+    "savingCustomer": "Saving the new customer…"
   },
   "done": {
     "title": "Sale Order created successfully!",
@@ -287,16 +308,18 @@
   },
   "customers": {
     "title": "Customers",
-    "subtitle": "{count} customers",
+    "subtitle": "Search by name, number or phone.",
     "name": "Name",
     "phone": "Phone",
-    "area": "Area",
-    "orders": "Sale Orders",
-    "settled": "Settled",
     "add": "Add customer",
     "addTitle": "New customer",
     "address": "Address / area",
-    "note": "Every role can add customers. A new customer typed in during a Sale Order is added here too. Saved in this browser only until Phase 2."
+    "note": "Note",
+    "number": "No.",
+    "editTitle": "Edit customer",
+    "searchPlaceholder": "Name, CU number or phone",
+    "empty": "No customers found.",
+    "help": "Every role can add and edit customers. Sale Orders and balances appear here from Phase 3."
   },
   "factoryOrders": {
     "title": "Factory orders",
@@ -404,15 +427,25 @@
   },
   "users": {
     "title": "Users & roles",
-    "subtitle": "Staff accounts are created by the admin. Staff sign in with a username and password.",
-    "add": "Add user",
-    "name": "Name",
-    "username": "Username",
+    "subtitle": "Staff sign in with the username (or phone number) and password you set here.",
+    "add": "Add staff member",
+    "addTitle": "New staff member",
+    "name": "Full name",
+    "username": "Username or phone number",
     "role": "Role",
     "status": "Status",
     "active": "Active",
-    "inactive": "Inactive",
-    "note": "Real sign-in, roles and permissions arrive in Phase 2."
+    "inactive": "Switched off",
+    "password": "First password",
+    "passwordHint": "At least 8 characters. Tell the person in person, not by message.",
+    "switchOff": "Switch off",
+    "switchOn": "Switch on",
+    "changeRole": "Change role",
+    "resetPassword": "Reset password",
+    "newPassword": "New password",
+    "you": "You",
+    "switchOffConfirm": "Switch off {name}? They will be signed out within a minute and can't sign in until switched on again.",
+    "passwordReset": "Password changed. Tell {name} the new password in person."
   },
   "orderDetail": {
     "notFound": "Sale Order {number} was not found.",
@@ -471,6 +504,84 @@
     "openOrders": "Open factory orders",
     "owed": "Still owed",
     "noAccess": "Only Managers and Admin can manage factories.",
-    "note": "Factories added here appear in the New factory order screen. Saved in this browser only until Phase 2."
+    "note": "Open orders and amounts owed still come from the sample factory orders until Phase 3.",
+    "number": "No.",
+    "editTitle": "Edit factory",
+    "empty": "No factories yet."
+  },
+  "signIn": {
+    "title": "Sign in",
+    "subtitle": "Use the username or phone number and password the Admin gave you.",
+    "userName": "Username or phone number",
+    "password": "Password",
+    "submit": "Sign in",
+    "working": "Signing in…",
+    "invalidCredentials": "That username or password is not right.",
+    "lockedOut": "Too many wrong tries. Wait 15 minutes, or ask the Admin to reset your password.",
+    "forgot": "Forgotten your password? Ask the Admin to reset it."
+  },
+  "errors": {
+    "network": "Can't reach the server. Check the internet connection and try again.",
+    "checkFields": "Please check the highlighted fields.",
+    "duplicate": "That name or code is already used.",
+    "changedByOthers": "Someone else changed this record while you were editing. Reload it and make your change again.",
+    "notAllowed": "Your role isn't allowed to do this.",
+    "notFound": "Not found. It may have been switched off.",
+    "unexpected": "Something went wrong. Please try again.",
+    "required": "Required",
+    "tooLong": "Too long",
+    "invalidPhone": "Enter a full phone number",
+    "invalidAmount": "Enter an amount of 0 or more",
+    "invalidColor": "Pick a colour",
+    "unknownCategory": "Pick a category",
+    "notAPhoto": "Only JPEG, PNG or WebP photos",
+    "tooLarge": "Photo is too large (10 MB at most)",
+    "tooManyPhotos": "At most 10 photos per design",
+    "PasswordTooShort": "Password needs at least 8 characters",
+    "DuplicateUserName": "That username is already used",
+    "InvalidUserName": "Use letters, numbers, - . _ @ or +",
+    "cannotChangeSelf": "You can't change your own account here",
+    "PasswordRequiresDigit": "Password needs a number",
+    "PasswordRequiresLower": "Password needs a small letter",
+    "PasswordRequiresUpper": "Password needs a capital letter",
+    "PasswordRequiresNonAlphanumeric": "Password needs a symbol"
+  },
+  "designEditor": {
+    "newTitle": "New design",
+    "editTitle": "Edit {code}",
+    "back": "Back to catalogue",
+    "code": "Design code",
+    "codeHint": "For example RY-101. Must be unique.",
+    "name": "Design name",
+    "category": "Category",
+    "chooseCategory": "Choose a category",
+    "basePrice": "Base price (per piece)",
+    "dimensions": "Dimensions",
+    "wood": "Wood",
+    "description": "Description",
+    "materials": "Fabric / material choices",
+    "materialName": "Material",
+    "surcharge": "Extra charge",
+    "addMaterial": "Add material",
+    "colors": "Colour choices",
+    "colorName": "Colour name",
+    "colorSwatch": "Swatch",
+    "addColor": "Add colour",
+    "accessories": "Optional accessories",
+    "accessoryName": "Accessory",
+    "accessoryPrice": "Price",
+    "addAccessory": "Add accessory",
+    "removeRow": "Remove {name}",
+    "active": "Show in the catalogue",
+    "activeHint": "Switch off instead of deleting: old Sale Orders still refer to this design.",
+    "save": "Save design",
+    "photos": "Photos",
+    "photosHint": "The first photo is the main one. Up to 10 photos. Large photos are shrunk before uploading.",
+    "photosAfterSave": "Save the design first, then add photos.",
+    "addPhoto": "Add photo",
+    "uploading": "Uploading…",
+    "makeMain": "Make main photo",
+    "removePhoto": "Remove photo",
+    "mainPhoto": "Main photo"
   }
 }

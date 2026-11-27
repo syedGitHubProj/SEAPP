@@ -173,7 +173,7 @@ Work is committed directly to `main` for now, with no pull requests (owner's dec
   - audit log, number sequences (SO-000145) and settings (currency, branch)
 - **2b. Records (done):** customers (all roles), factories, and designs with accessories (Manager/Admin), each with an audit trail.
 - **2c. Photos (done):** design photos are stored on the computer during development and in DigitalOcean Spaces on the server.
-- **2d. Website on real data:**
+- **2d. Website on real data (done):**
   - a sign-in page
   - the customers, factories and catalogue pages read from and save to the API
   - the role switcher is replaced by the real signed-in user

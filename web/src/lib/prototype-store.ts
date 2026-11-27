@@ -1,34 +1,39 @@
 "use client";
 
 /**
- * Browser-only state for the clickable prototype: who you are "viewing as",
- * the sales order being built, and sales/purchase orders created during the demo.
- * Kept in localStorage so a page refresh doesn't lose the demo. Replaced by the API in Phase 2+.
+ * Browser-only state for the parts that are still a prototype until Phase 3: the Sale Order being
+ * built, and Sale Orders and factory orders created during the demo. Kept in localStorage so a page
+ * refresh doesn't lose them. Customers, factories, the catalogue and sign-in now come from the API.
  */
 import { useMemo, useSyncExternalStore } from "react";
 import {
-  customers as sampleCustomers,
-  factories as sampleFactories,
-  findDesign,
   purchaseOrders as samplePurchaseOrders,
   salesOrders as sampleSalesOrders,
-  type Customer,
-  type FactoryRecord,
   type FulfilmentStatus,
   type PurchaseOrder,
-  type Role,
   type SalesOrder,
 } from "@/data/sample";
-import { type OrderLine, unitPrice } from "@/lib/orders";
+import type { ArtKind } from "@/lib/catalog";
 import { findPoLine } from "@/lib/purchasing";
 
+/**
+ * One design in the Sale Order being built. It keeps a snapshot of the design, the choices and
+ * the prices at the moment it was added, so later catalogue changes don't alter the order.
+ */
 export interface DraftItem {
   id: string;
+  designId: string;
   designCode: string;
-  materialId: string;
-  color: string;
-  accessoryIds: string[];
+  designName: string;
+  art: ArtKind;
+  photoUrl: string | null;
+  materialName: string | null;
+  colorName: string | null;
+  colorHex: string | null;
+  accessories: { name: string; price: number }[];
   quantity: number;
+  /** Catalogue price per piece (base + material + accessories). */
+  listUnitPrice: number;
   /** Price per piece agreed with the customer (may be below the catalogue price). */
   agreedUnitPrice: number;
 }
@@ -42,6 +47,7 @@ export interface NewCustomer {
 export interface Draft {
   items: DraftItem[];
   customerId: string | null;
+  customerName: string | null;
   newCustomer: NewCustomer | null;
   deliveryDate: string;
 }
@@ -49,21 +55,18 @@ export interface Draft {
 export type PaymentMethod = "cash" | "bank" | "other";
 
 interface State {
-  role: Role;
   draft: Draft;
-  /** Sales orders created in this demo (newest first). */
+  /** Sale Orders created in this demo (newest first). */
   placed: SalesOrder[];
-  /** Purchase orders created in this demo (newest first). */
+  /** Factory orders created in this demo (newest first). */
   purchases: PurchaseOrder[];
-  /** Customers and factories added in this demo (newest first). */
-  customers: Customer[];
-  factories: FactoryRecord[];
 }
 
-const STORAGE_KEY = "sellease-prototype-v2";
+// v3: draft items keep a snapshot of the API design (older saved drafts are ignored).
+const STORAGE_KEY = "sellease-prototype-v3";
 
-const emptyDraft: Draft = { items: [], customerId: null, newCustomer: null, deliveryDate: "" };
-const initialState: State = { role: "salesman", draft: emptyDraft, placed: [], purchases: [], customers: [], factories: [] };
+const emptyDraft: Draft = { items: [], customerId: null, customerName: null, newCustomer: null, deliveryDate: "" };
+const initialState: State = { draft: emptyDraft, placed: [], purchases: [] };
 
 function load(): State {
   if (typeof window === "undefined") return initialState;
@@ -106,34 +109,21 @@ function useStore<T>(select: (s: State) => T): T {
   );
 }
 
-export const useRole = () => useStore((s) => s.role);
 export const useDraft = () => useStore((s) => s.draft);
-/** Only the sales orders created in this demo (newest first). */
+/** Only the Sale Orders created in this demo (newest first). */
 export const usePlacedSalesOrders = () => useStore((s) => s.placed);
-/** Only the purchase orders created in this demo (newest first). */
+/** Only the factory orders created in this demo (newest first). */
 export const useCreatedPurchaseOrders = () => useStore((s) => s.purchases);
 
-/** Customers: demo-added first, then the sample ones. */
-export function useCustomers(): Customer[] {
-  const added = useStore((s) => s.customers);
-  return useMemo(() => [...added, ...sampleCustomers], [added]);
-}
-
-/** Factories: demo-added first, then the sample ones. */
-export function useFactories(): FactoryRecord[] {
-  const added = useStore((s) => s.factories);
-  return useMemo(() => [...added, ...sampleFactories], [added]);
-}
-
-/** Purchase orders: demo-created first, then the sample ones. */
+/** Factory orders: demo-created first, then the sample ones. */
 export function usePurchaseOrders(): PurchaseOrder[] {
   const created = useStore((s) => s.purchases);
   return useMemo(() => [...created, ...samplePurchaseOrders], [created]);
 }
 
 /**
- * Sales orders: demo-created first, then the sample ones. A confirmed order
- * shows as "Factory ordered" once any of its lines is on a purchase order.
+ * Sale Orders: demo-created first, then the sample ones. A confirmed order
+ * shows as "Factory ordered" once any of its lines is on a factory order.
  */
 export function useSalesOrders(): SalesOrder[] {
   const placed = useStore((s) => s.placed);
@@ -149,10 +139,6 @@ export function useSalesOrders(): SalesOrder[] {
   );
 }
 
-export function setRole(role: Role) {
-  update((s) => ({ ...s, role }));
-}
-
 export function addDraftItem(item: Omit<DraftItem, "id">) {
   const id = `${item.designCode}-${Date.now()}`;
   update((s) => ({ ...s, draft: { ...s.draft, items: [...s.draft.items, { ...item, id }] } }));
@@ -166,43 +152,18 @@ export function updateDraft(patch: Partial<Draft>) {
   update((s) => ({ ...s, draft: { ...s.draft, ...patch } }));
 }
 
-export function addCustomer(c: Omit<Customer, "id" | "orders" | "balance">): Customer {
-  const customer: Customer = { ...c, id: `new-${Date.now()}`, orders: 0, balance: 0 };
-  update((s) => ({ ...s, customers: [customer, ...s.customers] }));
-  return customer;
-}
-
-export function addFactory(f: Omit<FactoryRecord, "id">) {
-  update((s) => ({ ...s, factories: [{ ...f, id: `new-${Date.now()}` }, ...s.factories] }));
-}
-
-/** Saves a sale order. A customer typed in during the order is added to the customer list. */
-export function placeOrder(order: SalesOrder, newCustomer?: NewCustomer | null) {
-  update((s) => {
-    const customers = newCustomer
-      ? [{ id: `new-${Date.now()}`, name: newCustomer.name, phone: newCustomer.phone, area: newCustomer.address, orders: 1, balance: 0 }, ...s.customers]
-      : s.customers;
-    return { ...s, customers, placed: [order, ...s.placed], draft: emptyDraft };
-  });
+/** Saves a Sale Order (in this browser only until Phase 3) and clears the draft. */
+export function placeOrder(order: SalesOrder) {
+  update((s) => ({ ...s, placed: [order, ...s.placed], draft: emptyDraft }));
 }
 
 export function createPurchaseOrder(po: PurchaseOrder) {
   update((s) => ({ ...s, purchases: [po, ...s.purchases] }));
 }
 
-/** Catalogue price figures for a draft item (before any agreed discount). */
-export function toOrderLine(item: Omit<DraftItem, "id" | "agreedUnitPrice">): OrderLine {
-  const design = findDesign(item.designCode);
-  if (!design) return { basePrice: 0, materialSurcharge: 0, accessories: [], quantity: item.quantity };
-  return {
-    basePrice: design.price,
-    materialSurcharge: design.materials.find((m) => m.id === item.materialId)?.surcharge ?? 0,
-    accessories: design.accessories.filter((a) => item.accessoryIds.includes(a.id)),
-    quantity: item.quantity,
-  };
-}
-
-export const listUnitPrice = (item: Omit<DraftItem, "id" | "agreedUnitPrice">) => unitPrice(toOrderLine(item));
+/** Short description of a draft item's choices, e.g. "Leather · Bottle green · Centre table". */
+export const draftItemOptions = (item: DraftItem) =>
+  [item.materialName, item.colorName, ...item.accessories.map((a) => a.name)].filter(Boolean).join(" · ");
 
 export const draftItemTotal = (item: DraftItem) => item.agreedUnitPrice * item.quantity;
 

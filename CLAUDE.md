@@ -52,7 +52,17 @@ SellEase is a furniture showroom app for ABC Furniture in Pakistan. It covers th
 - **New migration:** `cd api && dotnet ef migrations add <Name> --project src/SellEase.Api --output-dir Data/Migrations`. A test fails if you forget it.
 - **Permissions:** `api/src/SellEase.Api/Auth/Permissions.cs` mirrors the "Who can do what" table in `docs/PLAN.md`. Every endpoint needs a signed-in user unless it is marked `AllowAnonymous`.
 - **Web:** `cd web && npm run lint && npm test && npm run build && npm run e2e`, or `npm run dev`
-- **Prototype data:** sample data is in `web/src/data/sample.ts`; browser-only demo state is in `web/src/lib/prototype-store.ts`. Both are replaced by API calls from Phase 2.
+- **Running the whole app locally:**
+  1. Start the database.
+  2. Run `cd api && dotnet run --project src/SellEase.Api -- seed-dev` once.
+  3. Start the API with `dotnet run --project src/SellEase.Api --launch-profile http`.
+  4. In another terminal, run `cd web && npm run dev`.
+  5. Sign in at http://localhost:3000 as `admin`, `manager` or `03001234567`, with the password in `appsettings.Development.json`.
+- **How the website reaches the API:** the browser calls `/api/...` on the website's own address. Next.js forwards those calls to `API_URL` (default http://localhost:5216); this address is fixed when the website is built. On the server, Caddy does the forwarding. The sign-in session is an HttpOnly cookie.
+- **Browser tests (`npm run e2e`):**
+  - They need the database running and **no API already running on port 5216**, because they start their own.
+  - They use a separate `sellease_e2e` database and `local-photos-e2e/` folder, so your own local data is never touched.
+- **Prototype data:** Sale Orders, factory orders and finance still use `web/src/data/sample.ts` and the browser-only `web/src/lib/prototype-store.ts` until Phase 3. Customers, factories, the catalogue, staff and sign-in use the API.
 - **Screen text:** all text is in `web/messages/en.json`.
 - **Local database:** `docker compose -f deploy/docker-compose.dev.yml up -d` (port 5433)
 - **Next.js version:** this is Next.js 16. Read `web/AGENTS.md` and `web/node_modules/next/dist/docs/` before relying on memory.

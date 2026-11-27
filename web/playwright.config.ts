@@ -1,7 +1,19 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const port = 3100;
+export const salesmanState = "e2e/.auth/salesman.json";
 
+/**
+ * Browser tests run the real website against the real API on the local PostgreSQL
+ * (start it with `docker compose -f deploy/docker-compose.dev.yml up -d`), using a separate
+ * `sellease_e2e` database and photo folder so your own local data is never touched.
+ * The API's seed-dev command creates the sample staff, customers, factories and designs there.
+ * Stop any API you are running on port 5216 first: the tests always start their own.
+ */
+const e2eApiEnv = {
+  ConnectionStrings__Default: "Host=localhost;Port=5433;Database=sellease_e2e;Username=sellease;Password=sellease_local_dev",
+  Photos__LocalPath: "local-photos-e2e",
+};
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
@@ -13,13 +25,34 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   projects: [
-    { name: "phone", use: { ...devices["Pixel 7"], viewport: { width: 375, height: 812 } } },
-    { name: "desktop", use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 } } },
+    { name: "setup", testMatch: /auth\.setup\.ts/ },
+    {
+      name: "phone",
+      use: { ...devices["Pixel 7"], viewport: { width: 375, height: 812 }, storageState: salesmanState },
+      dependencies: ["setup"],
+    },
+    {
+      name: "desktop",
+      use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 }, storageState: salesmanState },
+      dependencies: ["setup"],
+    },
   ],
-  webServer: {
-    // Tests run against the production build (run `npm run build` first).
-    command: `npx next start -p ${port}`,
-    port,
-    reuseExistingServer: !process.env.CI,
-  },
+  webServer: [
+    {
+      // Applies database changes, adds the sample records, then runs the API.
+      command:
+        "dotnet run --project ../api/src/SellEase.Api -- seed-dev && dotnet run --no-build --project ../api/src/SellEase.Api --launch-profile http",
+      url: "http://localhost:5216/health",
+      env: e2eApiEnv,
+      // Never reuse an API that might be connected to your own local database.
+      reuseExistingServer: false,
+      timeout: 240_000,
+    },
+    {
+      // Tests run against the production build (run `npm run build` first).
+      command: `npx next start -p ${port}`,
+      port,
+      reuseExistingServer: !process.env.CI,
+    },
+  ],
 });

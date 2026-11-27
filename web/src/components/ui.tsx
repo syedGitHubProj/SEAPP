@@ -110,3 +110,39 @@ export function PrototypeNote({ children }: { children: ReactNode }) {
     </p>
   );
 }
+
+/** Shown while a list loads, or when it couldn't load (with a retry button). */
+export function LoadState({
+  loading,
+  error,
+  onRetry,
+  loadingText,
+  errorText,
+  retryText,
+}: {
+  loading: boolean;
+  error: unknown;
+  onRetry: () => void;
+  loadingText: string;
+  errorText: string;
+  retryText: string;
+}) {
+  if (error) {
+    return (
+      <Card className="p-6 text-center text-sm" role="alert">
+        <p className="mb-3 text-red-800">{errorText}</p>
+        <Button variant="secondary" onClick={onRetry}>
+          {retryText}
+        </Button>
+      </Card>
+    );
+  }
+  if (loading) {
+    return (
+      <Card className="p-6 text-center text-sm text-zinc-500" role="status">
+        {loadingText}
+      </Card>
+    );
+  }
+  return null;
+}

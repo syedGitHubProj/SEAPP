@@ -1,0 +1,272 @@
+import { expect, test } from "@playwright/test";
+import { devPassword, randomPhone, signInByForm, staff, stateFile, tinyPng, unique } from "./helpers";
+
+// Most tests run signed in as the salesman (see playwright.config.ts); others switch role below.
+
+test.describe("signing in", () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+
+  test("signed-out visitors are sent to sign-in, and a wrong password is refused", async ({ page }) => {
+    await page.goto("/customers");
+    await expect(page).toHaveURL(/\/sign-in\?next=%2Fcustomers/);
+    await signInByForm(page, "nobody-here", "wrong-password");
+    await expect(page.getByText("That username or password is not right.")).toBeVisible();
+  });
+
+  test("a salesman signs in with a phone number typed with a dash, and signs out", async ({ page }) => {
+    await page.goto("/customers");
+    await page.getByLabel("Username or phone number").fill("0300-1234567");
+    await page.getByLabel("Password").fill(devPassword());
+    await page.getByRole("button", { name: "Sign in" }).click();
+    await expect(page).toHaveURL(/\/customers$/);
+    await expect(page.getByRole("heading", { name: "Customers", level: 1 })).toBeVisible();
+
+    await page.getByRole("button", { name: "Sign out" }).first().click();
+    await expect(page).toHaveURL(/\/sign-in/);
+  });
+});
+
+test("salesman creates a Sale Order, then a linked factory order", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: /Bilal/ })).toBeVisible();
+
+  // Sale Order: design, options and an agreed price below the catalogue price.
+  await page.goto("/catalog");
+  await page.getByRole("link", { name: "Select Royal Sofa Set" }).click();
+  await expect(page.getByRole("heading", { name: "Royal Sofa Set" })).toBeVisible();
+  await page.getByRole("checkbox", { name: "Centre table" }).check();
+  await page.getByRole("checkbox", { name: "Side tables (pair)" }).check();
+  const agreed = page.getByLabel(/Agreed selling price/);
+  await expect(agreed).toHaveValue("228000");
+  await agreed.fill("220000");
+  await expect(page.getByText("Discount from catalogue")).toBeVisible();
+  await page.getByRole("button", { name: "Add to Sale Order" }).click();
+
+  await expect(page).toHaveURL(/\/orders\/new$/);
+  const next = page.getByRole("button", { name: "Save & receive advance" });
+  await expect(next).toBeDisabled();
+  await page.getByRole("combobox", { name: /Choose customer/ }).selectOption({ label: "Mr. Imran Khan — 0321-4567890" });
+  await page.getByLabel(/Expected delivery/).fill("2026-12-20");
+  await next.click();
+
+  await expect(page.getByRole("heading", { name: "Receive advance" })).toBeVisible();
+  await page.getByLabel(/Advance amount/).fill("80000");
+  await expect(page.getByText("Rs. 140,000")).toBeVisible();
+  await page.getByRole("button", { name: "Record payment" }).click();
+
+  await expect(page.getByRole("heading", { name: "Sale Order created successfully!" })).toBeVisible();
+  await expect(page.getByText("SO-000145")).toBeVisible();
+
+  // Factory order against that Sale Order, using a factory from the database.
+  await page.getByRole("link", { name: "Create factory order" }).click();
+  await expect(page.getByRole("combobox", { name: /For Sale Order/ })).toHaveValue("SO-000145");
+  await page.getByLabel(/Factory cost per piece for Royal Sofa Set/).fill("140000");
+  await page.getByRole("combobox", { name: /^Factory/ }).selectOption("Chiniot Royal Works");
+  await page.getByLabel(/Expected completion/).fill("2026-12-10");
+  await expect(page.getByText("Rs. 80,000").first()).toBeVisible(); // margin on these items
+  await page.getByRole("button", { name: "Create factory order" }).click();
+
+  await expect(page.getByRole("heading", { name: "Sale Order SO-000145" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "PO-000037" }).filter({ visible: true })).toBeVisible();
+  await expect(page.getByText("Factory ordered").filter({ visible: true }).first()).toBeVisible();
+});
+
+test("an existing Sale Order can be split across factories", async ({ page }) => {
+  await page.goto("/factory-orders/new?so=SO-000144");
+  await expect(page.getByRole("combobox", { name: /For Sale Order/ })).toHaveValue("SO-000144");
+  await page.getByLabel(/Factory cost per piece for Luxury Bedroom Set/).fill("150000");
+  await page.getByRole("combobox", { name: /^Factory/ }).selectOption("Gujrat Furniture House");
+  await page.getByLabel(/Expected completion/).fill("2026-12-15");
+  await page.getByRole("button", { name: "Create factory order" }).click();
+  await expect(page.getByRole("heading", { name: "Sale Order SO-000144" })).toBeVisible();
+  await expect(page.getByText("Rs. 90,000").filter({ visible: true }).first()).toBeVisible(); // 240,000 - 150,000
+});
+
+test("a new customer typed in during a Sale Order is saved to the customer list", async ({ page }) => {
+  const name = unique("Walk-in");
+  await page.goto("/catalog/LV-402");
+  await page.getByRole("button", { name: "Add to Sale Order" }).click();
+  await page.getByRole("button", { name: "New customer" }).click();
+  await page.getByLabel(/Customer name/).fill(name);
+  await page.getByLabel(/^Phone/).fill(randomPhone());
+  await page.getByLabel(/Expected delivery/).fill("2026-12-20");
+  await page.getByRole("button", { name: "Save & receive advance" }).click();
+
+  await page.getByLabel(/Advance amount/).fill("999999");
+  await expect(page.getByText("can't be more than the Sale Order total")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Record payment" })).toBeDisabled();
+  await page.getByLabel(/Advance amount/).fill("10000");
+  await page.getByRole("button", { name: "Record payment" }).click();
+  await expect(page.getByRole("heading", { name: "Sale Order created successfully!" })).toBeVisible();
+
+  await page.goto("/customers");
+  await page.getByRole("searchbox", { name: "Search", exact: true }).fill(name);
+  await expect(page.getByText(name).filter({ visible: true })).toBeVisible();
+});
+
+test("salesman adds and edits a customer; numbers are given by the server", async ({ page }) => {
+  const name = unique("Aa Test Buyer");
+  await page.goto("/customers");
+  await page.getByRole("button", { name: "Add customer" }).click();
+  await page.getByLabel(/^Name/).fill(name);
+  await page.getByLabel(/^Phone/).fill("12");
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByText("Enter a full phone number")).toBeVisible();
+  await page.getByLabel(/^Phone/).fill(randomPhone());
+  await page.getByRole("button", { name: "Save" }).click();
+  await page.getByRole("searchbox", { name: "Search", exact: true }).fill(name);
+  await expect(page.getByText(name).filter({ visible: true })).toBeVisible();
+  await expect(page.getByText(/CU-\d{6}/).filter({ visible: true }).first()).toBeVisible();
+
+  await page.getByRole("button", { name: `Edit ${name}` }).filter({ visible: true }).click();
+  await page.getByLabel(/^Address/).fill("Gulberg III");
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByText("Gulberg III").filter({ visible: true })).toBeVisible();
+
+  await page.goto("/catalog/LV-402");
+  await page.getByRole("button", { name: "Add to Sale Order" }).click();
+  await expect(page.getByRole("combobox", { name: /Choose customer/ }).getByRole("option", { name: new RegExp(name) })).toHaveCount(1);
+});
+
+test("salesman can't add designs or manage factories", async ({ page }) => {
+  await page.goto("/catalog");
+  await expect(page.getByRole("link", { name: "Select Royal Sofa Set" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Add design" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /^Edit design/ })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Factories" })).toHaveCount(0);
+  await page.goto("/factories");
+  await expect(page.getByText("Only Managers and Admin can manage factories.")).toBeVisible();
+});
+
+test.describe("as manager", () => {
+  test.use({ storageState: stateFile("manager") });
+
+  test("sees the dashboard and finance pages", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.getByRole("heading", { name: "Showroom manager" })).toBeVisible();
+    await page.goto("/finance/cash-book");
+    await expect(page.getByTestId("closing-cash")).toContainText("Rs. 178,000");
+    await page.goto("/reports/profit-loss");
+    await expect(page.getByTestId("net-profit")).toContainText("Rs. 300,000");
+  });
+
+  test("adds a factory and can order from it", async ({ page }) => {
+    const name = unique("Sialkot Wood");
+    await page.goto("/factories");
+    await page.getByRole("button", { name: "Add factory" }).click();
+    await page.getByLabel(/^Factory name/).fill(name);
+    await page.getByLabel(/^Phone/).fill(randomPhone());
+    await page.getByLabel(/^City/).fill("Sialkot");
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByText(name).filter({ visible: true })).toBeVisible();
+
+    await page.goto("/factory-orders/new?so=SO-000144");
+    await page.getByRole("combobox", { name: /^Factory/ }).selectOption(name);
+  });
+
+  test("adds a design with options and a photo, and a salesman can sell it", async ({ page, browser }) => {
+    const code = `T-${Date.now().toString().slice(-6)}`;
+    await page.goto("/catalog");
+    await page.getByRole("link", { name: "Add design" }).click();
+    await page.getByLabel(/^Design code/).fill(code);
+    await page.getByLabel(/^Design name/).fill(`Test Chair ${code}`);
+    await page.getByLabel(/^Category/).selectOption({ label: "Living" });
+    await page.getByLabel(/^Base price/).fill("50000");
+    await page.getByRole("button", { name: "Add material" }).click();
+    await page.getByRole("textbox", { name: "Material" }).fill("Leather");
+    await page.getByRole("textbox", { name: "Extra charge" }).fill("5000");
+    await page.getByRole("button", { name: "Add accessory" }).click();
+    await page.getByRole("textbox", { name: "Accessory" }).fill("Cushion");
+    await page.getByRole("textbox", { name: "Price", exact: true }).fill("2000");
+    await page.getByRole("button", { name: "Save design" }).click();
+
+    // Saved: the editor reopens for the new design so photos can be added.
+    await expect(page.getByRole("heading", { name: `Edit ${code}` })).toBeVisible();
+    await page.locator('input[type="file"]').setInputFiles({ name: "chair.png", mimeType: "image/png", buffer: tinyPng });
+    await expect(page.getByAltText("Main photo")).toBeVisible();
+
+    // A salesman sees it with its photo and the right price.
+    const salesman = await browser.newContext({ storageState: stateFile("salesman") });
+    const sp = await salesman.newPage();
+    await sp.goto(`/catalog/${code}`);
+    await expect(sp.getByRole("heading", { name: `Test Chair ${code}` })).toBeVisible();
+    await expect(sp.getByRole("img", { name: `Test Chair ${code}` }).first()).toBeVisible();
+    await sp.getByRole("checkbox", { name: "Cushion" }).check();
+    await expect(sp.getByLabel(/Agreed selling price/)).toHaveValue("57000"); // 50,000 + 5,000 + 2,000
+    await salesman.close();
+  });
+
+  test("a duplicate design code is refused with a clear message", async ({ page }) => {
+    await page.goto("/catalog/edit");
+    await page.getByLabel(/^Design code/).fill("SF-310");
+    await page.getByLabel(/^Design name/).fill("Copy");
+    await page.getByLabel(/^Category/).selectOption({ label: "Sofa" });
+    await page.getByLabel(/^Base price/).fill("1000");
+    await page.getByRole("button", { name: "Save design" }).click();
+    await expect(page.getByText("That name or code is already used.")).toBeVisible();
+  });
+
+  test("can't open staff accounts", async ({ page }) => {
+    await page.goto("/admin/users");
+    await expect(page.getByText("Your role isn't allowed to do this.")).toBeVisible();
+  });
+});
+
+test.describe("as admin", () => {
+  test.use({ storageState: stateFile("admin") });
+
+  test("sees the owner overview and every screen", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.getByRole("heading", { name: "Owner overview" })).toBeVisible();
+    await page.goto("/catalog");
+    await expect(page.getByRole("link", { name: "Add design" })).toBeVisible();
+    await page.goto("/factories");
+    await expect(page.getByRole("button", { name: "Add factory" })).toBeVisible();
+    await page.goto("/orders");
+    await expect(page.getByRole("link", { name: "New Sale Order" }).filter({ visible: true }).first()).toBeVisible();
+  });
+
+  test("creates a staff account that can then sign in", async ({ page, browser }) => {
+    const fullName = unique("New Salesman");
+    const userName = `staff${Date.now().toString(36)}${Math.floor(Math.random() * 1000)}`;
+    const password = `pw-${Date.now().toString(36)}`;
+    await page.goto("/admin/users");
+    await expect(page.getByText(staff.admin.fullName).filter({ visible: true })).toBeVisible();
+    await page.getByRole("button", { name: "Add staff member" }).click();
+    await page.getByLabel(/^Full name/).fill(fullName);
+    await page.getByLabel(/^Username or phone number/).fill(userName);
+    await page.getByLabel(/^First password/).fill(password);
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByText(fullName).filter({ visible: true })).toBeVisible();
+
+    const fresh = await browser.newContext({ storageState: { cookies: [], origins: [] } });
+    const fp = await fresh.newPage();
+    await signInByForm(fp, userName, password);
+    await expect(fp.getByRole("heading", { name: new RegExp(fullName.split(" ")[0]) })).toBeVisible();
+    await fresh.close();
+  });
+});
+
+const listPages = [
+  ["/orders", "All Sale Orders"],
+  ["/customers", "Customers"],
+  ["/factories", "Factories"],
+  ["/catalog", "Furniture catalogue"],
+  ["/factory-orders", "Factory orders"],
+  ["/receiving", "Receiving"],
+  ["/deliveries", "Deliveries"],
+  ["/expenses", "Expenses"],
+  ["/admin/users", "Users & roles"],
+] as const;
+
+test.describe("layout", () => {
+  test.use({ storageState: stateFile("admin") });
+  for (const [path, heading] of listPages) {
+    test(`${path} loads without sideways scrolling`, async ({ page }) => {
+      await page.goto(path);
+      await expect(page.getByRole("heading", { name: heading, level: 1 })).toBeVisible();
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      expect(overflow).toBeLessThanOrEqual(0);
+    });
+  }
+});

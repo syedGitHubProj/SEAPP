@@ -4,6 +4,7 @@ import {
   BarChart3,
   Bell,
   ClipboardList,
+  LogOut,
   Factory,
   Home,
   LayoutGrid,
@@ -25,7 +26,7 @@ import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState, type ReactNode } from "react";
 import type { Role } from "@/data/sample";
-import { setRole, useRole } from "@/lib/prototype-store";
+import { SIGN_IN_PATH, useRole, useSession } from "@/lib/session";
 
 interface NavItem {
   href: string;
@@ -60,26 +61,28 @@ function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-function RoleSwitcher({ compact = false }: { compact?: boolean }) {
+function UserMenu({ compact = false }: { compact?: boolean }) {
   const t = useTranslations("shell");
   const tr = useTranslations("roles");
+  const { user, signOut } = useSession();
   const role = useRole();
+  if (!user) return null;
   return (
-    <label className="flex items-center gap-2 text-sm">
-      <span className={compact ? "sr-only" : "text-zinc-600"}>{t("viewingAs")}</span>
-      <select
-        aria-label={t("viewingAs")}
-        value={role}
-        onChange={(e) => setRole(e.target.value as Role)}
-        className="min-h-10 rounded-lg border border-black/10 bg-white px-2 font-medium text-brand-900"
+    <div className="flex items-center gap-2 text-sm">
+      <span className={compact ? "hidden text-end leading-tight sm:block" : "text-end leading-tight"}>
+        <span className="block font-medium text-brand-900" title={t("signedInAs", { name: user.fullName })}>{user.fullName}</span>
+        <span className="block text-xs text-zinc-500">{tr(role)}</span>
+      </span>
+      <button
+        type="button"
+        onClick={() => void signOut()}
+        aria-label={t("signOut")}
+        title={t("signOut")}
+        className="flex size-10 items-center justify-center rounded-xl text-brand-800 hover:bg-brand-50"
       >
-        {ALL.map((r) => (
-          <option key={r} value={r}>
-            {tr(r)}
-          </option>
-        ))}
-      </select>
-    </label>
+        <LogOut className="size-5" />
+      </button>
+    </div>
   );
 }
 
@@ -99,6 +102,24 @@ function Brand({ light = false }: { light?: boolean }) {
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  const { user } = useSession();
+  const ts = useTranslations("shell");
+
+  // The sign-in page has no menus.
+  if (pathname === SIGN_IN_PATH) return <main className="flex min-h-dvh items-center justify-center bg-sand-50 p-4">{children}</main>;
+  // Until we know who is signed in, show nothing private (signed-out people are sent to sign-in).
+  if (!user) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center p-4 text-sm text-zinc-500" role="status">
+        {ts("checking")}
+      </div>
+    );
+  }
+  return <SignedInShell>{children}</SignedInShell>;
+}
+
+function SignedInShell({ children }: { children: ReactNode }) {
   const t = useTranslations("nav");
   const ts = useTranslations("shell");
   const pathname = usePathname();
@@ -153,7 +174,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             />
           </div>
           <div className="ms-auto flex items-center gap-2">
-            <RoleSwitcher compact />
+            <UserMenu compact />
             <button
               type="button"
               aria-label={ts("notifications")}
@@ -222,7 +243,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           />
           <div className="absolute inset-x-0 bottom-0 max-h-[80dvh] overflow-y-auto rounded-t-3xl bg-white p-4 pb-8">
             <div className="mb-3 flex items-center justify-between">
-              <RoleSwitcher />
+              <UserMenu />
               <button
                 type="button"
                 aria-label={ts("close")}

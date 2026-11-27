@@ -2,10 +2,9 @@
 
 import { Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { DesignArt } from "@/components/DesignArt";
+import { DesignImage } from "@/components/DesignArt";
 import { Card, LinkButton, Money } from "@/components/ui";
-import { findDesign } from "@/data/sample";
-import { draftItemTotal, draftTotal, listUnitPrice, removeDraftItem, useDraft, type DraftItem } from "@/lib/prototype-store";
+import { draftItemOptions, draftItemTotal, draftTotal, removeDraftItem, useDraft, type DraftItem } from "@/lib/prototype-store";
 
 const steps = ["selectDesigns", "customise", "customerPayment", "confirm"] as const;
 
@@ -40,25 +39,22 @@ export function OrderSteps({ current }: { current: 1 | 2 | 3 | 4 }) {
 
 export function DraftItemRow({ item, editable = true }: { item: DraftItem; editable?: boolean }) {
   const t = useTranslations("newOrder");
-  const tm = useTranslations("materials");
-  const tacc = useTranslations("accessories");
-  const design = findDesign(item.designCode);
-  if (!design) return null;
-  const extras = [tm(item.materialId), ...item.accessoryIds.map((a) => tacc(a))].join(" · ");
+  const extras = draftItemOptions(item);
   return (
     <div className="flex items-center gap-3 py-3">
-      <DesignArt category={design.category} className="size-14 shrink-0 rounded-xl" />
+      <DesignImage photoUrl={item.photoUrl} category={item.art} alt={item.designName} className="size-14 shrink-0 rounded-xl" />
       <div className="min-w-0 flex-1">
-        <div className="truncate font-medium">{design.name}</div>
+        <div className="truncate font-medium">{item.designName}</div>
         <div className="truncate text-xs text-zinc-500">
-          {design.code} · {extras}
+          {item.designCode}
+          {extras && ` · ${extras}`}
           {item.quantity > 1 && ` · ×${item.quantity}`}
         </div>
         <div className="flex items-baseline gap-2">
           <Money amount={draftItemTotal(item)} className="text-sm font-semibold" />
-          {item.agreedUnitPrice < listUnitPrice(item) && (
+          {item.agreedUnitPrice < item.listUnitPrice && (
             <s className="text-xs text-zinc-400">
-              <Money amount={listUnitPrice(item) * item.quantity} />
+              <Money amount={item.listUnitPrice * item.quantity} />
             </s>
           )}
         </div>
@@ -68,7 +64,7 @@ export function DraftItemRow({ item, editable = true }: { item: DraftItem; edita
           <button
             type="button"
             onClick={() => removeDraftItem(item.id)}
-            aria-label={t("removeItem", { name: design.name })}
+            aria-label={t("removeItem", { name: item.designName })}
             className="flex size-10 items-center justify-center rounded-lg text-red-600 hover:bg-red-50"
           >
             <Trash2 className="size-4" />

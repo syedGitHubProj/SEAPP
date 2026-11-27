@@ -1,33 +1,56 @@
 "use client";
 
-import { ArrowLeft, Check, Minus, Plus } from "lucide-react";
+import { ArrowLeft, Check, Minus, Pencil, Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
-import { DesignArt } from "@/components/DesignArt";
+import { DesignImage } from "@/components/DesignArt";
 import { OrderSteps } from "@/components/OrderFlow";
-import { Button, Card, Money } from "@/components/ui";
-import { findDesign } from "@/data/sample";
-import { addDraftItem, listUnitPrice } from "@/lib/prototype-store";
+import { Button, Card, LinkButton, LoadState, Money } from "@/components/ui";
+import { ApiError, errorKey, useApiQuery } from "@/lib/api";
+import type { CategoryDto, DesignDto } from "@/lib/api-types";
+import { artFor, catalogUnitPrice } from "@/lib/catalog";
+import { addDraftItem } from "@/lib/prototype-store";
+import { useCan } from "@/lib/session";
 
 export function CustomiseDesign({ code }: { code: string }) {
   const t = useTranslations("customise");
-  const tm = useTranslations("materials");
-  const tacc = useTranslations("accessories");
+  const tc = useTranslations("common");
+  const te = useTranslations("errors");
+  const { data: design, error, loading, reload } = useApiQuery<DesignDto>(`/api/catalog/designs/${encodeURIComponent(code)}`);
+  const categories = useApiQuery<CategoryDto[]>("/api/catalog/categories");
+
+  if (!design) {
+    if (error instanceof ApiError && error.status === 404) {
+      return (
+        <Card className="p-6 text-center text-sm">
+          <p className="mb-4 text-zinc-600">{t("notFound")}</p>
+          <LinkButton href="/catalog">{t("back")}</LinkButton>
+        </Card>
+      );
+    }
+    return <LoadState loading={loading} error={error} onRetry={reload} loadingText={tc("loading")} errorText={te(errorKey(error))} retryText={tc("retry")} />;
+  }
+  const categoryName = categories.data?.find((c) => c.id === design.categoryId)?.name;
+  return <Customiser key={design.id} design={design} categoryName={categoryName} />;
+}
+
+function Customiser({ design, categoryName }: { design: DesignDto; categoryName: string | undefined }) {
+  const t = useTranslations("customise");
   const router = useRouter();
-  const design = findDesign(code)!;
+  const canEdit = useCan("catalog.edit");
+  const art = artFor(categoryName);
 
   const [tab, setTab] = useState<"customise" | "details">("customise");
-  const [materialId, setMaterialId] = useState(design.materials[0].id);
-  const [color, setColor] = useState(design.colors[1] ?? design.colors[0]);
+  const [materialId, setMaterialId] = useState<string | null>(design.materials[0]?.id ?? null);
+  const [colorId, setColorId] = useState<string | null>(design.colors[0]?.id ?? null);
   const [accessoryIds, setAccessoryIds] = useState<string[]>([]);
   const [quantity, setQuantity] = useState(1);
   // null = follow the catalogue price; a string = the salesman typed an agreed price.
   const [agreedText, setAgreedText] = useState<string | null>(null);
 
-  const options = { designCode: code, materialId, color, accessoryIds, quantity };
-  const listUnit = listUnitPrice(options);
+  const listUnit = catalogUnitPrice(design, { materialId, accessoryIds });
   const typed = agreedText === null ? null : Number(agreedText.replace(/[^\d]/g, "")) || 0;
   const agreedUnit = typed ?? listUnit;
   const discount = Math.max(0, listUnit - agreedUnit) * quantity;
@@ -37,26 +60,58 @@ export function CustomiseDesign({ code }: { code: string }) {
     setAccessoryIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
 
   const addToOrder = () => {
-    addDraftItem({ ...options, agreedUnitPrice: agreedUnit });
+    const material = design.materials.find((m) => m.id === materialId);
+    const color = design.colors.find((c) => c.id === colorId);
+    // Snapshot of the design, choices and prices as they are right now.
+    addDraftItem({
+      designId: design.id,
+      designCode: design.code,
+      designName: design.name,
+      art,
+      photoUrl: design.photos[0]?.url ?? null,
+      materialName: material?.name ?? null,
+      colorName: color?.name ?? null,
+      colorHex: color?.hex ?? null,
+      accessories: design.accessories.filter((a) => a.id && accessoryIds.includes(a.id)).map((a) => ({ name: a.name, price: a.price })),
+      quantity,
+      listUnitPrice: listUnit,
+      agreedUnitPrice: agreedUnit,
+    });
     router.push("/orders/new");
   };
 
   return (
     <>
       <OrderSteps current={2} />
-      <Link href="/catalog" className="mb-3 inline-flex min-h-10 items-center gap-1 text-sm font-medium text-brand-700">
-        <ArrowLeft className="size-4" /> {t("back")}
-      </Link>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <Link href="/catalog" className="inline-flex min-h-10 items-center gap-1 text-sm font-medium text-brand-700">
+          <ArrowLeft className="size-4" /> {t("back")}
+        </Link>
+        {canEdit && (
+          <Link href={`/catalog/edit?code=${encodeURIComponent(design.code)}`} className="inline-flex min-h-10 items-center gap-1 text-sm font-medium text-brand-700">
+            <Pencil className="size-4" /> {t("editDesign")}
+          </Link>
+        )}
+      </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
         <Card className="overflow-hidden">
-          <DesignArt category={design.category} className="aspect-[4/3]" />
+          <DesignImage photoUrl={design.photos[0]?.url} category={art} alt={design.name} className="aspect-[4/3] w-full" />
+          {design.photos.length > 1 && (
+            <ul className="flex gap-2 overflow-x-auto px-4 pt-3">
+              {design.photos.slice(1).map((p) => (
+                <li key={p.id} className="shrink-0">
+                  <DesignImage photoUrl={p.url} category={art} alt={design.name} className="size-16 rounded-lg" />
+                </li>
+              ))}
+            </ul>
+          )}
           <div className="flex items-start justify-between gap-3 p-4">
             <div>
               <h1 className="text-xl font-semibold text-brand-900">{design.name}</h1>
               <p className="text-sm text-zinc-500">{design.code}</p>
             </div>
-            <Money amount={design.price} className="text-lg font-semibold" />
+            <Money amount={design.basePrice} className="text-lg font-semibold" />
           </div>
         </Card>
 
@@ -78,13 +133,13 @@ export function CustomiseDesign({ code }: { code: string }) {
 
           {tab === "details" ? (
             <dl className="space-y-3 text-sm">
-              <div className="flex justify-between gap-3"><dt className="text-zinc-500">{t("dimensions")}</dt><dd>{design.dimensions}</dd></div>
-              <div className="flex justify-between gap-3"><dt className="text-zinc-500">{t("wood")}</dt><dd>{design.wood}</dd></div>
-              <div><dt className="text-zinc-500">{t("description")}</dt><dd className="mt-1">{design.description}</dd></div>
+              <div className="flex justify-between gap-3"><dt className="text-zinc-500">{t("dimensions")}</dt><dd>{design.dimensions ?? "—"}</dd></div>
+              <div className="flex justify-between gap-3"><dt className="text-zinc-500">{t("wood")}</dt><dd>{design.wood ?? "—"}</dd></div>
+              <div><dt className="text-zinc-500">{t("description")}</dt><dd className="mt-1">{design.description ?? "—"}</dd></div>
             </dl>
           ) : (
             <div className="space-y-5">
-              <fieldset>
+              {design.materials.length > 0 && <fieldset>
                 <legend className="mb-2 text-sm font-semibold">{t("material")}</legend>
                 <div className="flex flex-wrap gap-2">
                   {design.materials.map((m) => (
@@ -97,35 +152,37 @@ export function CustomiseDesign({ code }: { code: string }) {
                         materialId === m.id ? "bg-brand-700 text-white" : "border border-black/10 bg-white"
                       }`}
                     >
-                      {tm(m.id)}
+                      {m.name}
                       {m.surcharge > 0 && <span className="ms-1 opacity-80">(+<Money amount={m.surcharge} />)</span>}
                     </button>
                   ))}
                 </div>
-              </fieldset>
+              </fieldset>}
 
-              <fieldset>
+              {design.colors.length > 0 && <fieldset>
                 <legend className="mb-2 text-sm font-semibold">{t("color")}</legend>
                 <div className="flex flex-wrap gap-2">
-                  {design.colors.map((c, i) => (
+                  {design.colors.map((c) => (
                     <button
-                      key={c}
+                      key={c.id}
                       type="button"
-                      aria-pressed={color === c}
-                      aria-label={t("colorOption", { n: i + 1 })}
-                      onClick={() => setColor(c)}
-                      style={{ backgroundColor: c }}
+                      aria-pressed={colorId === c.id}
+                      aria-label={c.name}
+                      title={c.name}
+                      onClick={() => setColorId(c.id)}
+                      style={{ backgroundColor: c.hex }}
                       className={`flex size-11 items-center justify-center rounded-xl border ${
-                        color === c ? "border-brand-800 ring-2 ring-brand-600 ring-offset-2" : "border-black/10"
+                        colorId === c.id ? "border-brand-800 ring-2 ring-brand-600 ring-offset-2" : "border-black/10"
                       }`}
                     >
-                      {color === c && <Check className="size-5 text-white mix-blend-difference" />}
+                      {colorId === c.id && <Check className="size-5 text-white mix-blend-difference" />}
                     </button>
                   ))}
                 </div>
-              </fieldset>
+                {colorId && <p className="mt-1 text-xs text-zinc-600">{design.colors.find((c) => c.id === colorId)?.name}</p>}
+              </fieldset>}
 
-              <fieldset>
+              {design.accessories.length > 0 && <fieldset>
                 <legend className="mb-2 text-sm font-semibold">{t("accessories")}</legend>
                 <div className="space-y-2">
                   {design.accessories.map((a) => (
@@ -133,17 +190,17 @@ export function CustomiseDesign({ code }: { code: string }) {
                       <span className="flex items-center gap-3">
                         <input
                           type="checkbox"
-                          checked={accessoryIds.includes(a.id)}
-                          onChange={() => toggleAccessory(a.id)}
+                          checked={a.id !== null && accessoryIds.includes(a.id)}
+                          onChange={() => a.id && toggleAccessory(a.id)}
                           className="size-5 accent-brand-700"
                         />
-                        {tacc(a.id)}
+                        {a.name}
                       </span>
                       <span className="text-sm text-zinc-600">+<Money amount={a.price} /></span>
                     </label>
                   ))}
                 </div>
-              </fieldset>
+              </fieldset>}
 
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold">{t("quantity")}</span>

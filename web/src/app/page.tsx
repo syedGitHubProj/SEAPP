@@ -20,21 +20,24 @@ import {
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
-import { DesignArt } from "@/components/DesignArt";
+import { DesignImage } from "@/components/DesignArt";
 import { OrderStatusBadge } from "@/components/StatusBadge";
 import { Card, Money, PageHeader, StatCard } from "@/components/ui";
 import {
   auditEvents,
   cashBook,
   customers,
-  designs,
   monthlyPnl,
   staffUsers,
   weekKpis,
 } from "@/data/sample";
 import { closingCash, profitAndLoss } from "@/lib/finance";
 import { formatMoney } from "@/lib/money";
-import { usePurchaseOrders, useRole, useSalesOrders } from "@/lib/prototype-store";
+import { useApiQuery } from "@/lib/api";
+import type { CategoryDto, DesignDto } from "@/lib/api-types";
+import { artFor } from "@/lib/catalog";
+import { usePurchaseOrders, useSalesOrders } from "@/lib/prototype-store";
+import { useRole, useSession } from "@/lib/session";
 import { linkedSalesOrders, purchaseOrderTotal, salesOrderTotal } from "@/lib/purchasing";
 
 function ActionTile({ href, icon, title, hint, tone }: { href: string; icon: ReactNode; title: string; hint?: string; tone: string }) {
@@ -52,11 +55,15 @@ function ActionTile({ href, icon, title, hint, tone }: { href: string; icon: Rea
 
 function SalesmanHome() {
   const t = useTranslations("dashboard");
-  const featured = designs.slice(0, 6);
-  const myOrders = useSalesOrders().filter((o) => o.salesman === "Ali").slice(0, 3);
+  const { user } = useSession();
+  const featured = (useApiQuery<DesignDto[]>("/api/catalog/designs").data ?? []).slice(0, 6);
+  const categoryName = new Map((useApiQuery<CategoryDto[]>("/api/catalog/categories").data ?? []).map((c) => [c.id, c.name]));
+  // Sale Orders are still sample data until Phase 3, so show the most recent ones.
+  const myOrders = useSalesOrders().slice(0, 3);
+  const firstName = (user?.fullName ?? "").split(" ")[0];
   return (
     <>
-      <PageHeader title={t("salesman.greeting", { name: "Ali" })} subtitle={t("salesman.subtitle")} />
+      <PageHeader title={t("salesman.greeting", { name: firstName })} subtitle={t("salesman.subtitle")} />
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <ActionTile href="/orders/new" icon={<ShoppingCart className="size-6" />} title={t("salesman.newSale")} tone="bg-brand-700 text-white" />
         <ActionTile href="/customers" icon={<Users className="size-6" />} title={t("salesman.customers")} tone="bg-violet-100 text-violet-700" />
@@ -71,9 +78,9 @@ function SalesmanHome() {
         </div>
         <ul className="grid grid-cols-3 gap-3 sm:grid-cols-6">
           {featured.map((d) => (
-            <li key={d.code}>
+            <li key={d.id}>
               <Link href={`/catalog/${d.code}`} className="block overflow-hidden rounded-xl border border-black/5 bg-white shadow-sm">
-                <DesignArt category={d.category} className="aspect-square" />
+                <DesignImage photoUrl={d.photos[0]?.url} category={artFor(categoryName.get(d.categoryId))} alt={d.name} className="aspect-square w-full" />
                 <span className="block truncate px-2 py-1.5 text-xs font-medium">{d.name}</span>
               </Link>
             </li>

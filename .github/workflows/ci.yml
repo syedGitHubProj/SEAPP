@@ -25,13 +25,31 @@ jobs:
       - run: dotnet test --no-build -c Release
 
   web:
-    name: Web lint, test & build
+    name: Web lint, test, build & browser tests
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: web
+    # The browser tests run the real API against this throwaway database (CI-only values, not secrets).
+    services:
+      db:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: sellease
+          POSTGRES_USER: sellease
+          POSTGRES_PASSWORD: sellease_local_dev
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U sellease -d sellease"
+          --health-interval 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: api/global.json
+      - run: dotnet build ../api/src/SellEase.Api
       - uses: actions/setup-node@v4
         with:
           node-version: 22

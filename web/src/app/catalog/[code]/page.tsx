@@ -1,16 +1,9 @@
-import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { designs, findDesign } from "@/data/sample";
 import { CustomiseDesign } from "./CustomiseDesign";
-
-export function generateStaticParams() {
-  return designs.map((d) => ({ code: d.code }));
-}
 
 async function Design({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
-  if (!findDesign(code)) notFound();
-  return <CustomiseDesign code={code} />;
+  return <CustomiseDesign code={decodeURIComponent(code)} />;
 }
 
 export default function DesignPage({ params }: PageProps<"/catalog/[code]">) {

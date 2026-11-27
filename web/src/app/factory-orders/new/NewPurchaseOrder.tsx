@@ -7,11 +7,12 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Button, Card, Money, PageHeader } from "@/components/ui";
 import { nextPurchaseOrderSequence } from "@/data/sample";
+import { useApiQuery } from "@/lib/api";
+import type { FactoryDto } from "@/lib/api-types";
 import { formatOrderNumber } from "@/lib/orders";
 import {
   createPurchaseOrder,
   useCreatedPurchaseOrders,
-  useFactories,
   usePurchaseOrders,
   useSalesOrders,
 } from "@/lib/prototype-store";
@@ -26,7 +27,7 @@ export function NewPurchaseOrder() {
   const purchaseOrders = usePurchaseOrders();
   const created = useCreatedPurchaseOrders();
   const params = useSearchParams();
-  const factories = useFactories();
+  const factories = useApiQuery<FactoryDto[]>("/api/factories").data ?? [];
 
   // Only sales orders that still have lines waiting for a factory can be chosen.
   const candidates = salesOrders.filter(

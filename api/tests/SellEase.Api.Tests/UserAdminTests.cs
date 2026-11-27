@@ -65,6 +65,15 @@ public class UserAdminTests(ApiFixture api)
     }
 
     [Fact]
+    public async Task Any_password_of_eight_characters_is_accepted()
+    {
+        var admin = await api.SignInAsync(ApiFixture.AdminUser);
+        var response = await admin.PostAsJsonAsync("/api/admin/users",
+            new { userName = ApiFixture.UniqueName("letters"), fullName = "Letters Only", role = Roles.Salesman, password = "showroom" });
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+    }
+
+    [Fact]
     public async Task Deactivated_user_cannot_sign_in()
     {
         var admin = await api.SignInAsync(ApiFixture.AdminUser);

@@ -28,7 +28,9 @@ builder.Services.AddPhotoStore(builder.Configuration, builder.Environment.Conten
 builder.Services
     .AddIdentityCore<AppUser>(o =>
     {
+        // Staff-friendly: at least 8 characters, nothing else required (the screens say the same).
         o.Password.RequiredLength = 8;
+        o.Password.RequireDigit = false;
         o.Password.RequireNonAlphanumeric = false;
         o.Password.RequireUppercase = false;
         o.Password.RequireLowercase = false;
