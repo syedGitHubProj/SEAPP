@@ -33,6 +33,6 @@ public static class DevSeed
             await users.AddToRoleAsync(user, role);
         }
 
-        await DevSeedRecords.RunAsync(db, services.GetRequiredService<SellEase.Api.Common.NumberSequences>());
+        await DemoData.RunAsync(db, services.GetRequiredService<SellEase.Api.Common.NumberSequences>());
     }
 }

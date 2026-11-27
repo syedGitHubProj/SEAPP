@@ -1,0 +1,29 @@
+# Manual only: applies database changes on one SellEase server. Never runs by itself.
+name: Migrate database
+
+on:
+  workflow_dispatch:
+    inputs:
+      stack:
+        description: Which SellEase database to update
+        type: choice
+        options:
+          - abc-staging
+
+concurrency: server-${{ inputs.stack }}
+
+jobs:
+  migrate:
+    name: Migrate ${{ inputs.stack }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.stack }}
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/server
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          known-hosts: ${{ secrets.SERVER_KNOWN_HOSTS }}
+          ssh-key: ${{ secrets.SERVER_SSH_KEY }}
+      - run: ssh "${{ secrets.SERVER_USER }}@server" "cd /opt/sellease/${{ inputs.stack }} && ./sellease.sh migrate"

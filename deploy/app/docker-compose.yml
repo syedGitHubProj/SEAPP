@@ -1,0 +1,68 @@
+# One SellEase "stack" for one client and one environment (for example abc-staging):
+# its own database, API and website. Settings come from .env next to this file (see .env.example).
+# Use ./sellease.sh rather than calling docker compose directly: it picks the deployed image version.
+name: sellease-${STACK:?Set STACK in .env}
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sellease
+      POSTGRES_USER: sellease
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      TZ: Asia/Karachi
+    volumes:
+      - db:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sellease -d sellease"]
+      interval: 5s
+      retries: 20
+
+  api:
+    image: ghcr.io/${IMAGE_OWNER:?Set IMAGE_OWNER in .env}/sellease-api:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${APP_ENVIRONMENT:-Production}
+      ConnectionStrings__Default: Host=db;Port=5432;Database=sellease;Username=sellease;Password=${POSTGRES_PASSWORD}
+      Photos__Store: ${PHOTOS_STORE:-S3}
+      Photos__S3__ServiceUrl: ${SPACES_ENDPOINT:-}
+      Photos__S3__Bucket: ${SPACES_BUCKET:-}
+      Photos__S3__Prefix: ${STACK}/
+      Photos__S3__AccessKey: ${SPACES_KEY:-}
+      Photos__S3__SecretKey: ${SPACES_SECRET:-}
+      TZ: Asia/Karachi
+    volumes:
+      - keys:/keys
+      - photos:/photos
+    networks:
+      internal: {}
+      web:
+        aliases:
+          - ${STACK}-api
+
+  web:
+    image: ghcr.io/${IMAGE_OWNER}/sellease-web:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Karachi
+    networks:
+      web:
+        aliases:
+          - ${STACK}-web
+
+volumes:
+  db:
+  keys:
+  photos:
+
+networks:
+  internal: {}
+  web:
+    external: true
+    name: web

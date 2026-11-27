@@ -60,9 +60,17 @@ SellEase is a furniture showroom app for ABC Furniture in Pakistan. It covers th
   5. Sign in at http://localhost:3000 as `admin`, `manager` or `03001234567`, with the password in `appsettings.Development.json`.
 - **How the website reaches the API:** the browser calls `/api/...` on the website's own address. Next.js forwards those calls to `API_URL` (default http://localhost:5216); this address is fixed when the website is built. On the server, Caddy does the forwarding. The sign-in session is an HttpOnly cookie.
 - **Browser tests (`npm run e2e`):**
-  - They need the database running and **no API already running on port 5216**, because they start their own.
-  - They use a separate `sellease_e2e` database and `local-photos-e2e/` folder, so your own local data is never touched.
+  - They need the database running.
+  - They build into `.next-e2e` and start their own API on port 5317 (website on 3100), with a separate `sellease_e2e` database and `local-photos-e2e/` folder.
+  - They run fine alongside your own API (5216) and dev website (3000), and never touch your local data.
 - **Prototype data:** Sale Orders, factory orders and finance still use `web/src/data/sample.ts` and the browser-only `web/src/lib/prototype-store.ts` until Phase 3. Customers, factories, the catalogue, staff and sign-in use the API.
 - **Screen text:** all text is in `web/messages/en.json`.
 - **Local database:** `docker compose -f deploy/docker-compose.dev.yml up -d` (port 5433)
+- **Servers:**
+  - `docs/deploy/STAGING.md` is the owner's step-by-step guide.
+  - `deploy/caddy/` holds the one shared Caddy per Droplet. `deploy/app/` holds one stack per client (`docker-compose.yml`, `.env.example`, `sellease.sh`).
+  - GitHub Actions are all manual: **Deploy** (build images to GHCR, then start them), **Migrate database**, and **Staging tools** (`load-demo` / `wipe-staging`, which needs `WIPE <stack>` typed in).
+  - Each stack is a GitHub environment (e.g. `abc-staging`) with the secrets `SERVER_HOST`, `SERVER_USER`, `SERVER_SSH_KEY` and `SERVER_KNOWN_HOSTS`.
+  - The API refuses `load-demo` outside Development/Staging and `wipe-staging` outside Staging.
+  - To add a client: add its name to the workflow `options` lists, then add a Caddy site file, an `.env`, a DNS record and a GitHub environment.
 - **Next.js version:** this is Next.js 16. Read `web/AGENTS.md` and `web/node_modules/next/dist/docs/` before relying on memory.

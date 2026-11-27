@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using SellEase.Api.Admin;
@@ -23,6 +25,21 @@ builder.Services.AddDbContext<AppDbContext>((sp, options) => options
     .AddInterceptors(sp.GetRequiredService<AuditInterceptor>()));
 
 builder.Services.AddPhotoStore(builder.Configuration, builder.Environment.ContentRootPath);
+
+// ── Running behind Caddy on a server ───────────────────────────────────────
+// Caddy handles HTTPS and passes the original scheme on. The API is only reachable from inside the
+// server's Docker network, so the forwarded headers can be trusted.
+builder.Services.Configure<ForwardedHeadersOptions>(o =>
+{
+    o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    o.KnownIPNetworks.Clear();
+    o.KnownProxies.Clear();
+});
+// The keys that protect sign-in cookies are kept on disk, so people stay signed in after a redeploy.
+var keysPath = builder.Configuration["DataProtection:KeysPath"];
+var dataProtection = builder.Services.AddDataProtection().SetApplicationName("SellEase");
+if (!string.IsNullOrWhiteSpace(keysPath)) dataProtection.PersistKeysToFileSystem(new DirectoryInfo(keysPath));
+var onServer = builder.Environment.IsProduction() || builder.Environment.IsStaging();
 
 // ── Sign-in (username or phone number + password, cookie session) ───────────
 builder.Services
@@ -49,7 +66,8 @@ builder.Services.ConfigureApplicationCookie(o =>
     o.Cookie.Name = "sellease_session";
     o.Cookie.HttpOnly = true;
     o.Cookie.SameSite = SameSiteMode.Lax;
-    o.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    // On a server the cookie only ever travels over HTTPS.
+    o.Cookie.SecurePolicy = onServer ? CookieSecurePolicy.Always : CookieSecurePolicy.SameAsRequest;
     o.ExpireTimeSpan = TimeSpan.FromHours(12);
     o.SlidingExpiration = true;
     // An API answers 401/403 instead of redirecting to a login page.
@@ -75,6 +93,7 @@ if (Commands.IsCommand(args))
     return;
 }
 
+app.UseForwardedHeaders();
 app.UseAuthentication();
 app.UseAuthorization();
 

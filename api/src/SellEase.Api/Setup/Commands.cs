@@ -10,13 +10,15 @@ namespace SellEase.Api.Setup;
 /// <summary>
 /// One-off tasks run from the command line instead of starting the web server:
 ///   migrate                         apply database changes and reference data
-///   seed-dev                        add sample staff accounts (Development only)
+///   seed-dev                        sample staff accounts + demo data (Development only)
+///   load-demo                       demo customers, factories and designs, no staff (Development or Staging)
+///   wipe-staging                    delete everything and start again with only the basics (Staging only)
 ///   create-admin USERNAME "NAME"    create an Admin; the password is typed in, never passed as an argument
 /// </summary>
 public static class Commands
 {
     public static bool IsCommand(string[] args) =>
-        args.Length > 0 && args[0] is "migrate" or "seed-dev" or "create-admin";
+        args.Length > 0 && args[0] is "migrate" or "seed-dev" or "load-demo" or "wipe-staging" or "create-admin";
 
     public static async Task<int> RunAsync(WebApplication app, string[] args)
     {
@@ -39,6 +41,29 @@ public static class Commands
                 await DatabaseSetup.RunAsync(services);
                 await DevSeed.RunAsync(services, app.Configuration);
                 Console.WriteLine("Sample staff, customers, factories and designs are ready (password in appsettings.Development.json).");
+                return 0;
+
+            case "load-demo":
+                if (!DemoData.IsAllowed(app.Environment))
+                {
+                    Console.Error.WriteLine($"load-demo is not allowed here ({app.Environment.EnvironmentName}). Only on staging or a developer's computer.");
+                    return 1;
+                }
+                await DatabaseSetup.RunAsync(services);
+                await DemoData.RunAsync(services.GetRequiredService<AppDbContext>(), services.GetRequiredService<SellEase.Api.Common.NumberSequences>());
+                Console.WriteLine("Demo customers, factories and designs are loaded (no staff accounts).");
+                return 0;
+
+            case "wipe-staging":
+                if (!app.Environment.IsStaging())
+                {
+                    Console.Error.WriteLine($"wipe-staging only runs on staging (this is {app.Environment.EnvironmentName}). Nothing was changed.");
+                    return 1;
+                }
+                var db = services.GetRequiredService<AppDbContext>();
+                await db.Database.EnsureDeletedAsync();
+                await DatabaseSetup.RunAsync(services);
+                Console.WriteLine("Staging is wiped and back to the basics. Create the Admin account again with create-admin.");
                 return 0;
 
             case "create-admin" when args.Length >= 3:

@@ -1,0 +1,2 @@
+# Each app adds its own site file in ./sites/.
+import /etc/caddy/sites/*.caddy

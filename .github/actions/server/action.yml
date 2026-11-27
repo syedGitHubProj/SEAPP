@@ -1,0 +1,23 @@
+name: Connect to server
+description: Prepares SSH to the server of one SellEase stack, using that GitHub environment's secrets.
+inputs:
+  host:
+    required: true
+  known-hosts:
+    description: The server's SSH fingerprint line(s), so we only ever talk to the real server.
+    required: true
+  ssh-key:
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        HOST: ${{ inputs.host }}
+        KNOWN_HOSTS: ${{ inputs.known-hosts }}
+        SSH_KEY: ${{ inputs.ssh-key }}
+      run: |
+        mkdir -p ~/.ssh && chmod 700 ~/.ssh
+        printf '%s\n' "$SSH_KEY" > ~/.ssh/id_server && chmod 600 ~/.ssh/id_server
+        printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+        printf 'Host server\n  HostName %s\n  IdentityFile ~/.ssh/id_server\n  StrictHostKeyChecking yes\n' "$HOST" > ~/.ssh/config

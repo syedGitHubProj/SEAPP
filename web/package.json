@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "e2e": "playwright test"
+    "e2e": "NEXT_DIST_DIR=.next-e2e API_URL=http://localhost:5317 next build && playwright test"
   },
   "dependencies": {
     "lucide-react": "1.80.0",

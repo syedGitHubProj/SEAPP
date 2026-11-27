@@ -177,7 +177,7 @@ Work is committed directly to `main` for now, with no pull requests (owner's dec
   - a sign-in page
   - the customers, factories and catalogue pages read from and save to the API
   - the role switcher is replaced by the real signed-in user
-- **2e. Going online:**
+- **2e. Going online (built; waiting for the owner's server setup, see `docs/deploy/STAGING.md`):**
   - Docker images, Caddy, and `deploy.yml`
   - the manual `migrate.yml`
   - a step-by-step guide for the owner to set up the Droplet, DNS and secrets

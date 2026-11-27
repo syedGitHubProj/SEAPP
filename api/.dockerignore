@@ -1,0 +1,5 @@
+**/bin
+**/obj
+**/local-photos*
+**/TestResults
+tests/

@@ -1,0 +1,85 @@
+# Manual: builds the app and puts the new version on one SellEase server.
+# It does NOT change the database: run "Migrate database" afterwards when a release has database changes.
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      stack:
+        description: Which SellEase to update
+        type: choice
+        options:
+          - abc-staging
+
+concurrency: server-${{ inputs.stack }}
+
+jobs:
+  images:
+    name: Build images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: tag
+        run: |
+          echo "tag=${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
+          echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: api
+          push: true
+          tags: ghcr.io/${{ steps.tag.outputs.owner }}/sellease-api:${{ steps.tag.outputs.tag }}
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,mode=max,scope=api
+      - uses: docker/build-push-action@v6
+        with:
+          context: web
+          push: true
+          tags: ghcr.io/${{ steps.tag.outputs.owner }}/sellease-web:${{ steps.tag.outputs.tag }}
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
+
+  deploy:
+    name: Update ${{ inputs.stack }}
+    needs: images
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.stack }}
+    permissions:
+      contents: read
+      packages: read
+    env:
+      STACK_DIR: /opt/sellease/${{ inputs.stack }}
+      TAG: ${{ needs.images.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/server
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          known-hosts: ${{ secrets.SERVER_KNOWN_HOSTS }}
+          ssh-key: ${{ secrets.SERVER_SSH_KEY }}
+      - name: Copy the server files
+        run: |
+          ssh "${{ secrets.SERVER_USER }}@server" "test -f $STACK_DIR/.env || { echo 'No $STACK_DIR/.env on the server yet (see docs/deploy/STAGING.md)'; exit 1; }"
+          scp deploy/app/docker-compose.yml deploy/app/sellease.sh "${{ secrets.SERVER_USER }}@server:$STACK_DIR/"
+      - name: Start the new version
+        run: |
+          # The GitHub token lets the server download the images once; it is removed straight after.
+          echo "${{ secrets.GITHUB_TOKEN }}" | ssh "${{ secrets.SERVER_USER }}@server" \
+            "cd $STACK_DIR && echo $TAG > .image-tag && docker login ghcr.io -u ${{ github.actor }} --password-stdin >/dev/null && ./sellease.sh pull; status=\$?; docker logout ghcr.io >/dev/null; exit \$status"
+          ssh "${{ secrets.SERVER_USER }}@server" "cd $STACK_DIR && ./sellease.sh up && ./sellease.sh status"
+      - name: Summary
+        run: |
+          {
+            echo "### ${{ inputs.stack }} now runs version \`$TAG\`"
+            echo "If this release changes the database, run the **Migrate database** workflow next."
+          } >> "$GITHUB_STEP_SUMMARY"

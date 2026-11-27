@@ -1,0 +1,30 @@
+# One shared Caddy per Droplet. It owns the web ports (80/443), gets HTTPS certificates
+# automatically, and sends each address (abc-staging.selease.com, ...) to the right app.
+# Each app's site file goes in ./sites/ (see sites/README.md).
+# Start:  docker compose up -d      Reload after changing a site file:  docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile
+name: caddy
+
+services:
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./sites:/etc/caddy/sites:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - web
+
+volumes:
+  caddy_data:
+  caddy_config:
+
+networks:
+  # Shared by Caddy and every app's API and website.
+  web:
+    name: web

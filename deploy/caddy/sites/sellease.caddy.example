@@ -1,0 +1,24 @@
+# SellEase site for one client. Copy to sites/<STACK>.caddy, replace STACK and the address, then reload Caddy.
+# Example for ABC Furniture staging: STACK = abc-staging, address = abc-staging.selease.com
+
+abc-staging.selease.com {
+	encode zstd gzip
+
+	# Photo uploads are up to 10 MB.
+	request_body {
+		max_size 12MB
+	}
+
+	# The API (sign-in, data, photos).
+	handle /api/* {
+		reverse_proxy abc-staging-api:8080
+	}
+	handle /health {
+		reverse_proxy abc-staging-api:8080
+	}
+
+	# Everything else is the website.
+	handle {
+		reverse_proxy abc-staging-web:3000
+	}
+}

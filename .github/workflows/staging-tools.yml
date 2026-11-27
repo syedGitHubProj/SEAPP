@@ -1,0 +1,50 @@
+# Manual only, staging only: load demo data, or wipe staging back to the basics.
+# The app itself also refuses both on a server that is not set up as Staging.
+name: Staging tools
+
+on:
+  workflow_dispatch:
+    inputs:
+      stack:
+        description: Which staging server
+        type: choice
+        options:
+          - abc-staging
+      action:
+        description: What to do
+        type: choice
+        options:
+          - load-demo
+          - wipe-staging
+      confirm:
+        description: 'For wipe-staging only: type WIPE followed by the server name, e.g. WIPE abc-staging'
+        required: false
+        default: ''
+
+concurrency: server-${{ inputs.stack }}
+
+jobs:
+  run:
+    name: ${{ inputs.action }} on ${{ inputs.stack }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.stack }}
+    permissions:
+      contents: read
+    steps:
+      - name: Safety checks
+        env:
+          STACK: ${{ inputs.stack }}
+          ACTION: ${{ inputs.action }}
+          CONFIRM: ${{ inputs.confirm }}
+        run: |
+          case "$STACK" in *-staging) ;; *) echo "Only staging servers are allowed here."; exit 1 ;; esac
+          if [ "$ACTION" = "wipe-staging" ] && [ "$CONFIRM" != "WIPE $STACK" ]; then
+            echo "Not wiped. To wipe, type exactly: WIPE $STACK"; exit 1
+          fi
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/server
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          known-hosts: ${{ secrets.SERVER_KNOWN_HOSTS }}
+          ssh-key: ${{ secrets.SERVER_SSH_KEY }}
+      - run: ssh "${{ secrets.SERVER_USER }}@server" "cd /opt/sellease/${{ inputs.stack }} && ./sellease.sh ${{ inputs.action }}"

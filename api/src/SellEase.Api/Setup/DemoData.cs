@@ -6,11 +6,15 @@ using SellEase.Api.Domain;
 namespace SellEase.Api.Setup;
 
 /// <summary>
-/// Made-up customers, factories and designs (the same as the Phase 1 prototype) for a developer's
-/// own computer. Never used on a server. Only added when the tables are empty.
+/// Made-up customers, factories and designs (the same as the Phase 1 prototype), for a developer's
+/// computer and for staging so staff can try the app. No staff accounts. Never allowed on production.
+/// Each kind is only added when that table is empty.
 /// </summary>
-public static class DevSeedRecords
+public static class DemoData
 {
+    /// <summary>Demo data may be loaded on a developer's computer and on staging, never on production.</summary>
+    public static bool IsAllowed(IHostEnvironment env) => env.IsDevelopment() || env.IsStaging();
+
     private static readonly (string Name, decimal Surcharge)[] Fabrics = [("Velvet", 0), ("Leather", 15_000), ("Fabric", 0)];
     private static readonly (string Name, decimal Surcharge)[] Woods = [("Sheesham", 0), ("Teak", 20_000), ("Deodar", 8_000)];
     private static readonly (string Name, string Hex)[] FabricColors =
@@ -20,7 +24,9 @@ public static class DevSeedRecords
 
     public static async Task RunAsync(AppDbContext db, NumberSequences numbers)
     {
-        if (!await db.Factories.AnyAsync())
+        // Each demo record is added unless one with the same name (or design code) is already there,
+        // so loading twice changes nothing and staff's own records are never touched.
+        var factoryNames = (await db.Factories.Select(f => f.Name).ToListAsync()).ToHashSet(StringComparer.OrdinalIgnoreCase);
         {
             (string, string, string, string, string)[] factories =
             [
@@ -28,7 +34,7 @@ public static class DevSeedRecords
                 ("Lahore Woodcraft", "Rashid Mehmood", "0321-7654321", "Lahore", "Sofas, living room"),
                 ("Gujrat Furniture House", "Nadeem Butt", "0333-4455667", "Gujrat", "Bedroom, dining"),
             ];
-            foreach (var (name, contact, phone, city, speciality) in factories)
+            foreach (var (name, contact, phone, city, speciality) in factories.Where(f => !factoryNames.Contains(f.Item1)))
                 db.Factories.Add(new Factory
                 {
                     Number = await numbers.NextAsync(NumberSequences.Factory),
@@ -36,7 +42,7 @@ public static class DevSeedRecords
                 });
         }
 
-        if (!await db.Customers.AnyAsync())
+        var customerKeys = (await db.Customers.Select(c => c.Name + "|" + c.PhoneDigits).ToListAsync()).ToHashSet();
         {
             (string, string, string)[] customers =
             [
@@ -47,7 +53,7 @@ public static class DevSeedRecords
                 ("Mr. Usman Tariq", "0312-5566778", "Bahria Town"),
                 ("Mr. Hamza Qureshi", "0301-6655443", "Cantt"),
             ];
-            foreach (var (name, phone, address) in customers)
+            foreach (var (name, phone, address) in customers.Where(c => !customerKeys.Contains(c.Item1 + "|" + Validator.DigitsOf(c.Item2))))
                 db.Customers.Add(new Customer
                 {
                     Number = await numbers.NextAsync(NumberSequences.Customer),
@@ -55,9 +61,20 @@ public static class DevSeedRecords
                 });
         }
 
-        if (!await db.Designs.AnyAsync())
+        var designCodes = (await db.Designs.Select(d => d.Code).ToListAsync()).ToHashSet(StringComparer.OrdinalIgnoreCase);
         {
-            var category = await db.Categories.ToDictionaryAsync(c => c.Name, c => c.Id);
+            var existingCategories = await db.Categories.ToListAsync();
+            var categoryIds = new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
+            foreach (var c in existingCategories) categoryIds.TryAdd(c.Name, c.Id);
+            // A category may have been renamed on staging: demo designs then go into a new one of the old name.
+            var category = new CategoryLookup(name =>
+            {
+                if (categoryIds.TryGetValue(name, out var id)) return id;
+                var created = new Category { Name = name, SortOrder = existingCategories.Count + categoryIds.Count + 1 };
+                db.Categories.Add(created);
+                categoryIds[name] = created.Id = Guid.CreateVersion7();
+                return created.Id;
+            });
             var designs = new[]
             {
                 Make("RY-101", "Royal Sofa Set", category["Royal"], 185_000, "3+2+1 seater", "Sheesham", "Hand-carved frame with gold-leaf detailing.", true, [("Centre table", 25_000), ("Side tables (pair)", 18_000)]),
@@ -68,10 +85,15 @@ public static class DevSeedRecords
                 Make("DN-108", "Classic Dining Set", category["Dining"], 165_000, "6 seats", "Sheesham", "Six-seat dining table with upholstered chairs.", false, [("Glass top", 22_000), ("Sideboard", 75_000)]),
                 Make("LV-402", "Coffee Table Set", category["Living"], 42_000, "4 x 2 ft + 2 side tables", "Teak", "Coffee table with matching side tables.", false, [("Glass top", 9_000)]),
             };
-            db.Designs.AddRange(designs);
+            db.Designs.AddRange(designs.Where(d => !designCodes.Contains(d.Code)));
         }
 
         await db.SaveChangesAsync();
+    }
+
+    private sealed class CategoryLookup(Func<string, Guid> find)
+    {
+        public Guid this[string name] => find(name);
     }
 
     private static Design Make(string code, string name, Guid categoryId, decimal price, string dimensions, string wood,
