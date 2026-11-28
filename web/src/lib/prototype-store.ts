@@ -30,10 +30,10 @@ export interface DraftItem {
   materialName: string | null;
   colorName: string | null;
   colorHex: string | null;
-  accessories: { name: string; price: number }[];
+  accessories: { name: string; price: number | null }[];
   quantity: number;
-  /** Catalogue price per piece (base + material + accessories). */
-  listUnitPrice: number;
+  /** Catalogue price per piece (base + material + accessories); null when hidden from a Salesman. */
+  listUnitPrice: number | null;
   /** Price per piece agreed with the customer (may be below the catalogue price). */
   agreedUnitPrice: number;
 }

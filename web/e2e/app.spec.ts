@@ -14,12 +14,12 @@ test.describe("signing in", () => {
   });
 
   test("a salesman signs in with a phone number typed with a dash, and signs out", async ({ page }) => {
-    await page.goto("/customers");
+    await page.goto("/catalog");
     await page.getByLabel("Username or phone number").fill("0300-1234567");
     await page.getByLabel("Password").fill(devPassword());
     await page.getByRole("button", { name: "Sign in" }).click();
-    await expect(page).toHaveURL(/\/customers$/);
-    await expect(page.getByRole("heading", { name: "Customers", level: 1 })).toBeVisible();
+    await expect(page).toHaveURL(/\/catalog$/);
+    await expect(page.getByRole("heading", { name: "Furniture catalogue", level: 1 })).toBeVisible();
 
     await page.getByRole("button", { name: "Sign out" }).first().click();
     await expect(page).toHaveURL(/\/sign-in/);
@@ -30,23 +30,34 @@ test("salesman creates a Sale Order, then a linked factory order", async ({ page
   await page.goto("/");
   await expect(page.getByRole("heading", { name: /Bilal/ })).toBeVisible();
 
-  // Sale Order: design, options and an agreed price below the catalogue price.
+  // Sale Order: design and options. A salesman sees no catalogue prices and types the agreed price.
   await page.goto("/catalog");
   await page.getByRole("link", { name: "Select Royal Sofa Set" }).click();
   await expect(page.getByRole("heading", { name: "Royal Sofa Set" })).toBeVisible();
   await page.getByRole("checkbox", { name: "Centre table" }).check();
   await page.getByRole("checkbox", { name: "Side tables (pair)" }).check();
+  // No catalogue price and no option prices; only the total of the typed agreed price shows.
+  await expect(page.getByText("Catalogue price")).toHaveCount(0);
+  await expect(page.getByText("Rs.")).toHaveText(["Rs. 0"]);
   const agreed = page.getByLabel(/Agreed selling price/);
-  await expect(agreed).toHaveValue("228000");
+  await expect(agreed).toHaveValue("");
+  const add = page.getByRole("button", { name: "Add to Sale Order" });
+  await expect(add).toBeDisabled();
   await agreed.fill("220000");
-  await expect(page.getByText("Discount from catalogue")).toBeVisible();
-  await page.getByRole("button", { name: "Add to Sale Order" }).click();
+  await expect(page.getByText("Discount from catalogue")).toHaveCount(0);
+  await add.click();
 
   await expect(page).toHaveURL(/\/orders\/new$/);
   const next = page.getByRole("button", { name: "Save & receive advance" });
   await expect(next).toBeDisabled();
-  await page.getByRole("searchbox", { name: /Find customer/ }).fill("4567890");
-  await page.getByRole("list", { name: "Matching customers" }).getByRole("button", { name: /Mr\. Imran Khan/ }).click();
+  // Part of the number finds nobody; the full number, typed any way, finds the customer.
+  const phone = page.getByLabel(/Customer's phone number/);
+  await phone.fill("4567890");
+  await page.getByRole("button", { name: "Find" }).click();
+  await expect(page.getByText("No customer has this number.")).toBeVisible();
+  await phone.fill("+92 321 4567890");
+  await page.getByRole("button", { name: "Find" }).click();
+  await page.getByRole("list", { name: "Customer with this number" }).getByRole("button", { name: /Mr\. Imran Khan/ }).click();
   await expect(page.getByRole("button", { name: "Change" })).toBeVisible();
   await page.getByLabel(/Expected delivery/).fill("2026-12-20");
   await next.click();
@@ -73,7 +84,9 @@ test("salesman creates a Sale Order, then a linked factory order", async ({ page
   await expect(page.getByText("Factory ordered").filter({ visible: true }).first()).toBeVisible();
 });
 
-test("an existing Sale Order can be split across factories", async ({ page }) => {
+test.describe("as manager, a Sale Order", () => {
+  test.use({ storageState: stateFile("manager") });
+  test("can be split across factories", async ({ page }) => {
   await page.goto("/factory-orders/new?so=SO-000144");
   await expect(page.getByRole("combobox", { name: /For Sale Order/ })).toHaveValue("SO-000144");
   await page.getByLabel(/Factory cost per piece for Luxury Bedroom Set/).fill("150000");
@@ -82,15 +95,20 @@ test("an existing Sale Order can be split across factories", async ({ page }) =>
   await page.getByRole("button", { name: "Create factory order" }).click();
   await expect(page.getByRole("heading", { name: "Sale Order SO-000144" })).toBeVisible();
   await expect(page.getByText("Rs. 90,000").filter({ visible: true }).first()).toBeVisible(); // 240,000 - 150,000
+  });
 });
 
-test("a new customer typed in during a Sale Order is saved to the customer list", async ({ page }) => {
+test("a customer not found by phone is added during the Sale Order, and found next time", async ({ page }) => {
   const name = unique("Walk-in");
+  const number = randomPhone();
   await page.goto("/catalog/LV-402");
+  await page.getByLabel(/Agreed selling price/).fill("42000");
   await page.getByRole("button", { name: "Add to Sale Order" }).click();
-  await page.getByRole("button", { name: "New customer" }).click();
+  await page.getByLabel(/Customer's phone number/).fill(number);
+  await page.getByRole("button", { name: "Find" }).click();
+  await page.getByRole("button", { name: "Add as new customer" }).click();
+  await expect(page.getByLabel(/^Phone/)).toHaveValue(number);
   await page.getByLabel(/Customer name/).fill(name);
-  await page.getByLabel(/^Phone/).fill(randomPhone());
   await page.getByLabel(/Expected delivery/).fill("2026-12-20");
   await page.getByRole("button", { name: "Save & receive advance" }).click();
 
@@ -101,58 +119,20 @@ test("a new customer typed in during a Sale Order is saved to the customer list"
   await page.getByRole("button", { name: "Record payment" }).click();
   await expect(page.getByRole("heading", { name: "Sale Order created successfully!" })).toBeVisible();
 
-  await page.goto("/customers");
-  await page.getByRole("searchbox", { name: "Search", exact: true }).fill(name);
-  await expect(page.getByText(name).filter({ visible: true })).toBeVisible();
+  await page.goto("/catalog/LV-402");
+  await page.getByLabel(/Agreed selling price/).fill("42000");
+  await page.getByRole("button", { name: "Add to Sale Order" }).click();
+  await page.getByLabel(/Customer's phone number/).fill(number.replace("-", " "));
+  await page.getByRole("button", { name: "Find" }).click();
+  await expect(page.getByRole("list", { name: "Customer with this number" }).getByRole("button", { name: new RegExp(name) })).toHaveCount(1);
 });
 
-test("salesman adds and edits a customer; numbers are given by the server", async ({ page }) => {
-  const name = unique("Aa Test Buyer");
+test("salesman has no customer list", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("link", { name: "Customers" })).toHaveCount(0);
   await page.goto("/customers");
-  await page.getByRole("button", { name: "Add customer" }).click();
-  await page.getByLabel(/^Name/).fill(name);
-  await page.getByLabel(/^Phone/).fill("12");
-  await page.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByText("Enter a full phone number")).toBeVisible();
-  await page.getByLabel(/^Phone/).fill(randomPhone());
-  await page.getByRole("button", { name: "Save" }).click();
-  await page.getByRole("searchbox", { name: "Search", exact: true }).fill(name);
-  await expect(page.getByText(name).filter({ visible: true })).toBeVisible();
-  await expect(page.getByText(/CU-\d{6}/).filter({ visible: true }).first()).toBeVisible();
-
-  await page.getByRole("button", { name: `Edit ${name}` }).filter({ visible: true }).click();
-  await page.getByLabel(/^Address/).fill("Gulberg III");
-  await page.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByText("Gulberg III").filter({ visible: true })).toBeVisible();
-
-  await page.goto("/catalog/LV-402");
-  await page.getByRole("button", { name: "Add to Sale Order" }).click();
-  await page.getByRole("searchbox", { name: /Find customer/ }).fill(name);
-  await expect(page.getByRole("list", { name: "Matching customers" }).getByRole("button", { name: new RegExp(name) })).toHaveCount(1);
-});
-
-test("a switched-off customer is hidden from lists and new Sale Orders until switched on", async ({ page }) => {
-  const name = unique("Aa Leaver");
-  const created = await page.request.post("/api/customers", { data: { name, phone: randomPhone() } });
-  expect(created.ok()).toBeTruthy();
-
-  await page.goto("/customers");
-  await page.getByRole("searchbox", { name: "Search", exact: true }).fill(name);
-  page.once("dialog", (d) => void d.accept());
-  await page.getByRole("button", { name: `Switch off: ${name}` }).filter({ visible: true }).click();
-  await expect(page.getByText("No customers found.").filter({ visible: true })).toBeVisible();
-
-  await page.goto("/catalog/LV-402");
-  await page.getByRole("button", { name: "Add to Sale Order" }).click();
-  await page.getByRole("searchbox", { name: /Find customer/ }).fill(name);
-  await expect(page.getByText("No customer matches.", { exact: false })).toBeVisible();
-
-  await page.goto("/customers");
-  await page.getByRole("searchbox", { name: "Search", exact: true }).fill(name);
-  await page.getByLabel("Show switched-off records").check();
-  await page.getByRole("button", { name: `Switch on: ${name}` }).filter({ visible: true }).click();
-  await page.getByLabel("Show switched-off records").uncheck();
-  await expect(page.getByRole("button", { name: `Switch off: ${name}` }).filter({ visible: true })).toBeVisible();
+  await expect(page.getByText("Your role isn't allowed to do this.")).toBeVisible();
+  expect((await page.request.get("/api/customers")).status()).toBe(403);
 });
 
 test("salesman can't add designs or manage factories", async ({ page }) => {
@@ -175,6 +155,52 @@ test.describe("as manager", () => {
     await expect(page.getByTestId("closing-cash")).toContainText("Rs. 178,000");
     await page.goto("/reports/profit-loss");
     await expect(page.getByTestId("net-profit")).toContainText("Rs. 300,000");
+  });
+
+  test("edits customers but cannot add one from the customer list", async ({ page }) => {
+    const name = unique("Aa Test Buyer");
+    const created = await page.request.post("/api/customers", { data: { name, phone: randomPhone() } });
+    expect(created.ok()).toBeTruthy();
+
+    await page.goto("/customers");
+    await expect(page.getByRole("heading", { name: "Customers", level: 1 })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Add customer/ })).toHaveCount(0);
+    await page.getByRole("searchbox", { name: "Search", exact: true }).fill(name);
+    await expect(page.getByText(/CU-\d{6}/).filter({ visible: true }).first()).toBeVisible();
+    await page.getByRole("button", { name: `Edit ${name}` }).filter({ visible: true }).click();
+    await page.getByLabel(/^Phone/).fill("12");
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByText("Enter a full phone number")).toBeVisible();
+    await page.getByLabel(/^Phone/).fill(randomPhone());
+    await page.getByLabel(/^Address/).fill("Gulberg III");
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByText("Gulberg III").filter({ visible: true })).toBeVisible();
+  });
+
+  test("a switched-off customer is not found on new Sale Orders until switched on", async ({ page }) => {
+    const name = unique("Aa Leaver");
+    const number = randomPhone();
+    const created = await page.request.post("/api/customers", { data: { name, phone: number } });
+    expect(created.ok()).toBeTruthy();
+
+    await page.goto("/customers");
+    await page.getByRole("searchbox", { name: "Search", exact: true }).fill(name);
+    page.once("dialog", (d) => void d.accept());
+    await page.getByRole("button", { name: `Switch off: ${name}` }).filter({ visible: true }).click();
+    await expect(page.getByText("No customers found.").filter({ visible: true })).toBeVisible();
+
+    await page.goto("/catalog/LV-402");
+    await page.getByRole("button", { name: "Add to Sale Order" }).click();
+    await page.getByLabel(/Customer's phone number/).fill(number);
+    await page.getByRole("button", { name: "Find" }).click();
+    await expect(page.getByText("No customer has this number.")).toBeVisible();
+
+    await page.goto("/customers");
+    await page.getByRole("searchbox", { name: "Search", exact: true }).fill(name);
+    await page.getByLabel("Show switched-off records").check();
+    await page.getByRole("button", { name: `Switch on: ${name}` }).filter({ visible: true }).click();
+    await page.getByLabel("Show switched-off records").uncheck();
+    await expect(page.getByRole("button", { name: `Switch off: ${name}` }).filter({ visible: true })).toBeVisible();
   });
 
   test("adds a factory and can order from it", async ({ page }) => {
@@ -245,14 +271,21 @@ test.describe("as manager", () => {
     await page.locator('input[type="file"]').setInputFiles({ name: "chair.png", mimeType: "image/png", buffer: tinyPng });
     await expect(page.getByAltText("Main photo")).toBeVisible();
 
-    // A salesman sees it with its photo and the right price.
+    // The manager sees the catalogue price with the chosen options.
+    await page.goto(`/catalog/${code}`);
+    await page.getByRole("checkbox", { name: "Cushion" }).check();
+    await expect(page.getByLabel(/Agreed selling price/)).toHaveValue("57000"); // 50,000 + 5,000 + 2,000
+
+    // A salesman sees it with its photo, but no prices.
     const salesman = await browser.newContext({ storageState: stateFile("salesman") });
     const sp = await salesman.newPage();
     await sp.goto(`/catalog/${code}`);
     await expect(sp.getByRole("heading", { name: `Test Chair ${code}` })).toBeVisible();
     await expect(sp.getByRole("img", { name: `Test Chair ${code}` }).first()).toBeVisible();
     await sp.getByRole("checkbox", { name: "Cushion" }).check();
-    await expect(sp.getByLabel(/Agreed selling price/)).toHaveValue("57000"); // 50,000 + 5,000 + 2,000
+    await expect(sp.getByLabel(/Agreed selling price/)).toHaveValue("");
+    await expect(sp.getByText("Catalogue price")).toHaveCount(0);
+    await expect(sp.getByText("Rs.")).toHaveText(["Rs. 0"]);
     await salesman.close();
   });
 

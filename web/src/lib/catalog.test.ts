@@ -22,6 +22,11 @@ describe("catalogue price", () => {
     expect(catalogUnitPrice(sofa, { materialId: "m2", accessoryIds: ["a1", "a2"] })).toBe(183_000);
   });
 
+  it("is unknown when prices are hidden", () => {
+    const hidden = { basePrice: null, materials: [], accessories: [] };
+    expect(catalogUnitPrice(hidden, { materialId: null, accessoryIds: [] })).toBeNull();
+  });
+
   it("ignores unknown choices", () => {
     expect(catalogUnitPrice(sofa, { materialId: "gone", accessoryIds: ["gone"] })).toBe(125_000);
   });

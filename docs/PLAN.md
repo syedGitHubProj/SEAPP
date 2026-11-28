@@ -98,18 +98,22 @@ Each new client later means a new `.env`, a new database, one Caddy entry and, f
 - **Languages:** all screen text comes from `messages/en.json`, and the layout uses start/end spacing so right-to-left works later.
 - **Database migrations on the server are never automatic.** They run only from a GitHub Actions workflow that the owner starts by hand, as on PTRP.
 
-## Who can do what (owner-confirmed 2026-11-25)
+## Who can do what (owner-confirmed 2026-11-25, updated 2026-11-28)
 | Action | Salesman | Manager | Admin |
 |---|:-:|:-:|:-:|
-| View catalogue | ✓ | ✓ | ✓ |
+| View catalogue (designs, options, photos) | ✓ | ✓ | ✓ |
+| See catalogue prices, factory costs and margins | | ✓ | ✓ |
 | Add / edit designs, prices, photos | | ✓ | ✓ |
-| Add / edit customers | ✓ | ✓ | ✓ |
-| Create Sale Orders, take advances and payments | ✓ | ✓ | ✓ |
-| Create factory (purchase) orders against a Sale Order | ✓ | ✓ | ✓ |
+| Find a customer by full phone number; add a new customer on a Sale Order | ✓ | ✓ | ✓ |
+| Browse the customer list; edit and switch off customers | | ✓ | ✓ |
+| Create Sale Orders, take advances and payments | ✓ (own) | ✓ | ✓ |
+| Create factory (purchase) orders against a Sale Order | ✓ (own, no cost, needs approval) | ✓ | ✓ |
+| Approve or reject factory orders, entering the factory cost | | ✓ | ✓ |
 | Add / edit factories | | ✓ | ✓ |
 | Receiving, deliveries, expense approval, cash book, reports | | ✓ | ✓ |
 | Users, roles, settings, audit log, financial corrections | | | ✓ |
 
+Customers are created only on a Sale Order; no screen has an "Add customer" button.
 Admin has full access to everything. Workers and skilled workers only see the receiving and delivery tasks assigned to them (Phase 3).
 On screens, a customer's order is called a **Sale Order**.
 
@@ -187,11 +191,21 @@ Work is committed directly to `main` for now, with no pull requests (owner's dec
   - settings: business name and currency (`/admin/settings`, Admin); amounts and the header use them
   - the audit log viewer (`/admin/audit`, Admin), filtered by kind of record and by person
   - a search box replaces the customer drop-down on a new Sale Order, so it works with any number of customers
+- **2g. Salesman limits (done, 2026-11-28, owner feedback):**
+  - Salesmen have no Customers page and cannot list or edit customers (API refuses too).
+  - A new Sale Order finds the customer by full phone number (exact match, with or without +92); if nobody has it, the salesman adds a new customer there.
+  - No "Add customer" button anywhere; Manager and Admin edit and switch off customers on the Customers page.
+  - Salesmen see no catalogue prices, factory costs or margins (the API leaves prices out); they type the agreed selling price.
 
 *Checkpoint:* the owner creates the Droplet, the Spaces bucket and the GitHub secrets (step-by-step guide provided). Staging goes live with real sign-in.
 
 **Phase 3: Operations** (in steps: sales orders and payments / factory purchasing and receiving / delivery)
 - Sales orders (with line snapshots, agreed prices and both statuses).
+- **Owner's rules for Salesmen (2026-11-28):**
+  - A Salesman sees only their own Sale Orders and their own factory orders.
+  - A Salesman never sees catalogue prices or factory costs; they always type the agreed selling price per piece, with a quantity per item.
+  - A Salesman's factory order has no cost. It waits for a Manager, who enters the factory cost per line and approves, or rejects with a reason; the Salesman sees the reason and can fix and resend.
+  - One Sale Order can be split across several factory orders (different factories); each Sale Order line is on only one active factory order.
 - Advances and balance collections.
 - Cancellations and refunds with a reason and approval.
 - Purchase orders to factories, created against a sales order; each PO line linked to a sales-order line, with factory cost. Production tracking.

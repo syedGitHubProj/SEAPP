@@ -5,11 +5,11 @@ using Microsoft.EntityFrameworkCore;
 namespace SellEase.Api.Tests;
 
 public sealed record CategoryDto(Guid Id, string Name, int SortOrder, bool IsActive, uint Version);
-public sealed record MaterialDto(Guid? Id, string Name, decimal Surcharge);
+public sealed record MaterialDto(Guid? Id, string Name, decimal? Surcharge);
 public sealed record ColorDto(Guid? Id, string Name, string Hex);
-public sealed record AccessoryDto(Guid? Id, string Name, decimal Price);
+public sealed record AccessoryDto(Guid? Id, string Name, decimal? Price);
 public sealed record DesignDto(
-    Guid Id, string Code, string Name, Guid CategoryId, decimal BasePrice,
+    Guid Id, string Code, string Name, Guid CategoryId, decimal? BasePrice,
     string? Dimensions, string? Wood, string? Description,
     MaterialDto[] Materials, ColorDto[] Colors, AccessoryDto[] Accessories,
     bool IsActive, uint Version, PhotoDto[]? Photos = null);
@@ -53,7 +53,7 @@ public class CatalogTests(ApiFixture api)
     }
 
     [Fact]
-    public async Task Manager_adds_a_design_and_a_salesman_sees_it_with_its_options()
+    public async Task Manager_adds_a_design_and_a_salesman_sees_it_with_its_options_but_no_prices()
     {
         var manager = await api.SignInAsync(ApiFixture.ManagerUser);
         var code = NewCode();
@@ -62,11 +62,20 @@ public class CatalogTests(ApiFixture api)
         var salesman = await api.SignInAsync(ApiFixture.SalesmanUser);
         var design = await salesman.GetFromJsonAsync<DesignDto>($"/api/catalog/designs/{code.ToLowerInvariant()}");
 
-        Assert.Equal(125_000m, design!.BasePrice);
-        Assert.Equal(["Velvet", "Leather"], design.Materials.Select(m => m.Name));
-        Assert.Equal(15_000m, design.Materials[1].Surcharge);
+        Assert.Equal(["Velvet", "Leather"], design!.Materials.Select(m => m.Name));
         Assert.Equal("#216b44", design.Colors.Single().Hex);
         Assert.Equal(["Centre table", "Side tables"], design.Accessories.Select(a => a.Name));
+        Assert.Null(design.BasePrice);
+        Assert.All(design.Materials, m => Assert.Null(m.Surcharge));
+        Assert.All(design.Accessories, a => Assert.Null(a.Price));
+
+        var list = await salesman.GetFromJsonAsync<List<DesignDto>>($"/api/catalog/designs?q={code}");
+        Assert.All(list!, d => Assert.Null(d.BasePrice));
+
+        var forManager = await manager.GetFromJsonAsync<DesignDto>($"/api/catalog/designs/{code}");
+        Assert.Equal(125_000m, forManager!.BasePrice);
+        Assert.Equal(15_000m, forManager.Materials[1].Surcharge);
+        Assert.Equal(25_000m, forManager.Accessories[0].Price);
     }
 
     [Fact]

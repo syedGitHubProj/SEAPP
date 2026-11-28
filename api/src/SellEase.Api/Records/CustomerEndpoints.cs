@@ -6,7 +6,10 @@ using SellEase.Api.Domain;
 
 namespace SellEase.Api.Records;
 
-/// <summary>Customers: every role may view, add and edit them.</summary>
+/// <summary>
+/// Customers are added only while taking a Sale Order. Every role can find a customer by their
+/// exact phone number and add a new one; only Manager and Admin browse the list and edit.
+/// </summary>
 public static class CustomerEndpoints
 {
     public sealed record CustomerDto(Guid Id, string Number, string Name, string Phone, string? Address, string? Note, bool IsActive, uint Version);
@@ -17,8 +20,23 @@ public static class CustomerEndpoints
     public static void MapCustomerEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/customers").RequireAuthorization(Permissions.CustomersEdit);
+        var manage = app.MapGroup("/api/customers").RequireAuthorization(Permissions.CustomersManage);
 
-        group.MapGet("/", async (AppDbContext db, string? q, bool? includeInactive, int? take) =>
+        // The whole phone number must be typed, so nobody can browse customers through this.
+        group.MapGet("/lookup", async (AppDbContext db, string? phone) =>
+        {
+            var digits = Validator.DigitsOf(phone ?? "");
+            if (digits.Length < Validator.MinPhoneDigits)
+                return new Validator().Add("phone", "invalidPhone").Problem();
+            // "0300-1234567" and "+92 300 1234567" are the same number: compare the last 10 digits.
+            var key = digits.Length >= 10 ? digits[^10..] : digits;
+            var list = await db.Customers.AsNoTracking()
+                .Where(c => c.IsActive && (key.Length == 10 ? c.PhoneDigits.EndsWith(key) : c.PhoneDigits == key))
+                .OrderBy(c => c.Name).Take(10).ToListAsync();
+            return Results.Ok(list.Select(ToDto));
+        });
+
+        manage.MapGet("/", async (AppDbContext db, string? q, bool? includeInactive, int? take) =>
         {
             var query = db.Customers.AsNoTracking();
             if (includeInactive != true) query = query.Where(c => c.IsActive);
@@ -50,7 +68,7 @@ public static class CustomerEndpoints
             return await db.SaveOrConflictAsync() ?? Results.Created($"/api/customers/{customer.Id}", ToDto(customer));
         });
 
-        group.MapPut("/{id:guid}", async (Guid id, CustomerInput input, AppDbContext db) =>
+        manage.MapPut("/{id:guid}", async (Guid id, CustomerInput input, AppDbContext db) =>
         {
             if (Validate(input) is { IsValid: false } v) return v.Problem();
             var customer = await db.Customers.FindAsync(id);

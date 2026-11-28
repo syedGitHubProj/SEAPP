@@ -10,6 +10,7 @@ namespace SellEase.Api.Records;
 /// <summary>
 /// The catalogue: every role can view it; Manager and Admin add and edit categories and designs.
 /// Designs are switched off rather than deleted, because old Sale Orders refer to them.
+/// Prices are sent only to roles that may see them; a Salesman gets null and agrees the price with the customer.
 /// </summary>
 public static class CatalogEndpoints
 {
@@ -17,14 +18,16 @@ public static class CatalogEndpoints
     public sealed record CategoryInput(string Name, int SortOrder, bool IsActive = true, uint Version = 0);
 
     public sealed record MaterialDto(Guid? Id, string Name, decimal Surcharge);
+    public sealed record MaterialView(Guid? Id, string Name, decimal? Surcharge);
     public sealed record ColorDto(Guid? Id, string Name, string Hex);
     public sealed record AccessoryDto(Guid? Id, string Name, decimal Price);
+    public sealed record AccessoryView(Guid? Id, string Name, decimal? Price);
     public sealed record PhotoDto(Guid Id, string Url);
 
     public sealed record DesignDto(
-        Guid Id, string Code, string Name, Guid CategoryId, decimal BasePrice,
+        Guid Id, string Code, string Name, Guid CategoryId, decimal? BasePrice,
         string? Dimensions, string? Wood, string? Description,
-        MaterialDto[] Materials, ColorDto[] Colors, AccessoryDto[] Accessories,
+        MaterialView[] Materials, ColorDto[] Colors, AccessoryView[] Accessories,
         bool IsActive, uint Version, PhotoDto[] Photos);
 
     public sealed record DesignInput(
@@ -35,17 +38,18 @@ public static class CatalogEndpoints
 
     private static CategoryDto ToDto(Category c) => new(c.Id, c.Name, c.SortOrder, c.IsActive, c.Version);
 
-    private static DesignDto ToDto(Design d) => new(
-        d.Id, d.Code, d.Name, d.CategoryId, d.BasePrice, d.Dimensions, d.Wood, d.Description,
-        d.Materials.OrderBy(m => m.SortOrder).Select(m => new MaterialDto(m.Id, m.Name, m.Surcharge)).ToArray(),
+    private static DesignDto ToDto(Design d, bool prices) => new(
+        d.Id, d.Code, d.Name, d.CategoryId, prices ? d.BasePrice : null, d.Dimensions, d.Wood, d.Description,
+        d.Materials.OrderBy(m => m.SortOrder).Select(m => new MaterialView(m.Id, m.Name, prices ? m.Surcharge : null)).ToArray(),
         d.Colors.OrderBy(c => c.SortOrder).Select(c => new ColorDto(c.Id, c.Name, c.Hex)).ToArray(),
-        d.Accessories.OrderBy(a => a.SortOrder).Select(a => new AccessoryDto(a.Id, a.Name, a.Price)).ToArray(),
+        d.Accessories.OrderBy(a => a.SortOrder).Select(a => new AccessoryView(a.Id, a.Name, prices ? a.Price : null)).ToArray(),
         d.IsActive, d.Version,
         d.Photos.OrderBy(p => p.SortOrder).Select(ToDto).ToArray());
 
     public static PhotoDto ToDto(DesignPhoto p) => new(p.Id, $"/api/catalog/photos/{p.Id}");
 
     private static bool CanEdit(ClaimsPrincipal user) => Permissions.RolesWith(Permissions.CatalogEdit).Any(user.IsInRole);
+    private static bool SeesPrices(ClaimsPrincipal user) => Permissions.RolesWith(Permissions.CatalogPrices).Any(user.IsInRole);
 
     private static IQueryable<Design> WithOptions(AppDbContext db) =>
         db.Designs.Include(d => d.Materials).Include(d => d.Colors).Include(d => d.Accessories).Include(d => d.Photos).AsSplitQuery();
@@ -97,14 +101,15 @@ public static class CatalogEndpoints
                 var text = $"%{q.Trim()}%";
                 query = query.Where(d => EF.Functions.ILike(d.Name, text) || EF.Functions.ILike(d.Code, text));
             }
-            return (await query.OrderBy(d => d.Code).ToListAsync()).Select(ToDto);
+            var prices = SeesPrices(user);
+            return (await query.OrderBy(d => d.Code).ToListAsync()).Select(d => ToDto(d, prices));
         });
 
         view.MapGet("/designs/{code}", async (string code, AppDbContext db, ClaimsPrincipal user) =>
         {
             var normalized = code.Trim().ToUpperInvariant();
             var design = await WithOptions(db).AsNoTracking().FirstOrDefaultAsync(d => d.Code == normalized);
-            return design is null || (!design.IsActive && !CanEdit(user)) ? Results.NotFound() : Results.Ok(ToDto(design));
+            return design is null || (!design.IsActive && !CanEdit(user)) ? Results.NotFound() : Results.Ok(ToDto(design, SeesPrices(user)));
         });
 
         edit.MapPost("/designs", async (DesignInput input, AppDbContext db) =>
@@ -113,7 +118,7 @@ public static class CatalogEndpoints
             var design = new Design { Code = "", Name = "" };
             Apply(design, input, db);
             db.Designs.Add(design);
-            return await db.SaveOrConflictAsync() ?? Results.Created($"/api/catalog/designs/{design.Code}", ToDto(design));
+            return await db.SaveOrConflictAsync() ?? Results.Created($"/api/catalog/designs/{design.Code}", ToDto(design, prices: true));
         });
 
         edit.MapPut("/designs/{id:guid}", async (Guid id, DesignInput input, AppDbContext db) =>
@@ -125,7 +130,7 @@ public static class CatalogEndpoints
             db.ExpectVersion(design, input.Version);
             Apply(design, input, db);
             design.IsActive = input.IsActive;
-            return await db.SaveOrConflictAsync() ?? Results.Ok(ToDto(design));
+            return await db.SaveOrConflictAsync() ?? Results.Ok(ToDto(design, prices: true));
         });
     }
 

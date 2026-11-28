@@ -14,7 +14,7 @@ import {
   ShieldCheck,
   ShoppingCart,
   Truck,
-  Users,
+  LayoutGrid,
   Wallet,
 } from "lucide-react";
 import Link from "next/link";
@@ -65,7 +65,7 @@ function SalesmanHome() {
       <PageHeader title={t("salesman.greeting", { name: firstName })} subtitle={t("salesman.subtitle")} />
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <ActionTile href="/orders/new" icon={<ShoppingCart className="size-6" />} title={t("salesman.newSale")} tone="bg-brand-700 text-white" />
-        <ActionTile href="/customers" icon={<Users className="size-6" />} title={t("salesman.customers")} tone="bg-violet-100 text-violet-700" />
+        <ActionTile href="/catalog" icon={<LayoutGrid className="size-6" />} title={t("salesman.catalog")} tone="bg-violet-100 text-violet-700" />
         <ActionTile href="/orders" icon={<ClipboardList className="size-6" />} title={t("salesman.myOrders")} tone="bg-sky-100 text-sky-700" />
         <ActionTile href="/orders" icon={<HandCoins className="size-6" />} title={t("salesman.receivePayment")} tone="bg-orange-100 text-orange-700" />
       </div>

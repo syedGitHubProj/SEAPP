@@ -46,7 +46,8 @@ export const navItems: NavItem[] = [
   { href: "/catalog", key: "catalog", icon: LayoutGrid, roles: ALL },
   { href: "/orders/new", key: "newSale", icon: Plus, roles: ALL },
   { href: "/orders", key: "orders", icon: ClipboardList, roles: ALL },
-  { href: "/customers", key: "customers", icon: Users, roles: ALL },
+  // Salesmen find customers by phone on a new Sale Order instead of browsing a list.
+  { href: "/customers", key: "customers", icon: Users, roles: MGMT },
   { href: "/factory-orders", key: "factoryOrders", icon: Factory, roles: ALL },
   { href: "/factories", key: "factories", icon: Warehouse, roles: MGMT },
   { href: "/receiving", key: "receiving", icon: PackageCheck, roles: MGMT },

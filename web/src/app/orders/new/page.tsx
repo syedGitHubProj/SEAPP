@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, UserPlus, Users } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { CustomerPicker } from "@/components/CustomerPicker";
@@ -42,25 +42,20 @@ export default function NewOrderPage() {
       <OrderSteps current={3} />
       <PageHeader title={t("title")} />
 
-      <div className="grid gap-5 lg:grid-cols-[1fr_22rem]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="space-y-5">
           <Card className="p-4">
             <div className="mb-3 flex items-center justify-between gap-3">
               <h2 className="font-semibold text-brand-900">{t("customer")}</h2>
-              <button
-                type="button"
-                onClick={() =>
-                  updateDraft(
-                    isNewCustomer
-                      ? { newCustomer: null }
-                      : { newCustomer: { name: "", phone: "", address: "" }, customerId: null, customerName: null },
-                  )
-                }
-                className="inline-flex min-h-10 items-center gap-1.5 rounded-lg px-2 text-sm font-medium text-brand-700 hover:bg-brand-50"
-              >
-                {isNewCustomer ? <Users className="size-4" /> : <UserPlus className="size-4" />}
-                {isNewCustomer ? t("pickExisting") : t("addNewCustomer")}
-              </button>
+              {isNewCustomer && (
+                <button
+                  type="button"
+                  onClick={() => updateDraft({ newCustomer: null })}
+                  className="inline-flex min-h-10 items-center gap-1.5 rounded-lg px-2 text-sm font-medium text-brand-700 hover:bg-brand-50"
+                >
+                  <Search className="size-4" /> {t("pickExisting")}
+                </button>
+              )}
             </div>
 
             {isNewCustomer ? (
@@ -96,6 +91,7 @@ export default function NewOrderPage() {
               <CustomerPicker
                 selectedName={draft.customerId ? draft.customerName : null}
                 onSelect={(c) => updateDraft({ customerId: c?.id ?? null, customerName: c?.name ?? null })}
+                onNew={(phone) => updateDraft({ newCustomer: { name: "", phone, address: "" }, customerId: null, customerName: null })}
               />
             )}
           </Card>

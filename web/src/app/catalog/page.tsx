@@ -127,7 +127,7 @@ export default function CatalogPage() {
                       <p className="text-xs text-zinc-500">
                         {d.code} {!d.isActive && <Badge>{t("inactiveBadge")}</Badge>}
                       </p>
-                      <Money amount={d.basePrice} className="mt-1 text-sm font-semibold text-brand-800" />
+                      {d.basePrice !== null && <Money amount={d.basePrice} className="mt-1 text-sm font-semibold text-brand-800" />}
                       <div className="mt-auto flex gap-2 pt-3">
                         {d.isActive && (
                           <LinkButton href={`/catalog/${d.code}`} className="min-h-9 flex-1" aria-label={t("selectDesign", { name: d.name })}>

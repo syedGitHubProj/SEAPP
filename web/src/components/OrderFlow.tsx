@@ -52,7 +52,7 @@ export function DraftItemRow({ item, editable = true }: { item: DraftItem; edita
         </div>
         <div className="flex items-baseline gap-2">
           <Money amount={draftItemTotal(item)} className="text-sm font-semibold" />
-          {item.agreedUnitPrice < item.listUnitPrice && (
+          {item.listUnitPrice !== null && item.agreedUnitPrice < item.listUnitPrice && (
             <s className="text-xs text-zinc-400">
               <Money amount={item.listUnitPrice * item.quantity} />
             </s>

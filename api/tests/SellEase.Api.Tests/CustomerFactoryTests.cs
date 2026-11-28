@@ -30,18 +30,50 @@ public class CustomerTests(ApiFixture api)
     }
 
     [Fact]
-    public async Task Customers_are_found_by_name_or_by_phone_however_it_is_typed()
+    public async Task Manager_finds_customers_by_name_or_by_phone_however_it_is_typed()
     {
-        var salesman = await api.SignInAsync(ApiFixture.SalesmanUser);
+        var manager = await api.SignInAsync(ApiFixture.ManagerUser);
         var name = ApiFixture.UniqueName("Ayesha");
         var phone = "0300-" + Random.Shared.Next(1_000_000, 9_999_999);
-        await CreateAsync(salesman, name, phone);
+        await CreateAsync(manager, name, phone);
 
-        var byName = await salesman.GetFromJsonAsync<List<CustomerDto>>($"/api/customers?q={name[..10].ToUpperInvariant()}");
-        var byPhone = await salesman.GetFromJsonAsync<List<CustomerDto>>($"/api/customers?q={phone.Replace("-", "")}");
+        var byName = await manager.GetFromJsonAsync<List<CustomerDto>>($"/api/customers?q={name[..10].ToUpperInvariant()}");
+        var byPhone = await manager.GetFromJsonAsync<List<CustomerDto>>($"/api/customers?q={phone.Replace("-", "")}");
 
         Assert.Contains(byName!, c => c.Name == name);
         Assert.Contains(byPhone!, c => c.Name == name);
+    }
+
+    [Fact]
+    public async Task Salesman_cannot_browse_or_edit_customers()
+    {
+        var salesman = await api.SignInAsync(ApiFixture.SalesmanUser);
+        var c = await CreateAsync(salesman, ApiFixture.UniqueName("Private"), "0333-" + Random.Shared.Next(1_000_000, 9_999_999));
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await salesman.GetAsync("/api/customers")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await salesman.GetAsync("/api/customers?q=a")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await salesman.PutAsJsonAsync($"/api/customers/{c.Id}", c with { Note = "x" })).StatusCode);
+    }
+
+    [Fact]
+    public async Task Salesman_finds_a_customer_only_by_the_full_phone_number()
+    {
+        var salesman = await api.SignInAsync(ApiFixture.SalesmanUser);
+        var seven = Random.Shared.Next(1_000_000, 9_999_999).ToString();
+        var name = ApiFixture.UniqueName("Phone");
+        await CreateAsync(salesman, name, $"0322-{seven}");
+
+        // However the number is typed, with or without +92, it matches.
+        foreach (var typed in new[] { $"0322{seven}", $"0322 {seven}", $"+92 322 {seven}", $"92-322-{seven}" })
+        {
+            var found = await salesman.GetFromJsonAsync<List<CustomerDto>>($"/api/customers/lookup?phone={Uri.EscapeDataString(typed)}");
+            Assert.Contains(found!, c => c.Name == name);
+        }
+
+        // Part of the number finds nobody, and too short a number is refused.
+        var partial = await salesman.GetFromJsonAsync<List<CustomerDto>>($"/api/customers/lookup?phone=322{seven}"[..^1]);
+        Assert.DoesNotContain(partial!, c => c.Name == name);
+        Assert.Equal(HttpStatusCode.BadRequest, (await salesman.GetAsync("/api/customers/lookup?phone=4567")).StatusCode);
     }
 
     [Fact]
@@ -60,12 +92,12 @@ public class CustomerTests(ApiFixture api)
     [Fact]
     public async Task Edit_is_saved_and_audited_but_a_stale_edit_is_refused()
     {
-        var salesman = await api.SignInAsync(ApiFixture.SalesmanUser);
+        var admin = await api.SignInAsync(ApiFixture.AdminUser);
         var manager = await api.SignInAsync(ApiFixture.ManagerUser);
-        var c = await CreateAsync(salesman, ApiFixture.UniqueName("Sana"), "0345-2233445");
+        var c = await CreateAsync(admin, ApiFixture.UniqueName("Sana"), "0345-2233445");
 
         var first = await manager.PutAsJsonAsync($"/api/customers/{c.Id}", c with { Address = "Johar Town" });
-        var stale = await salesman.PutAsJsonAsync($"/api/customers/{c.Id}", c with { Note = "Wants delivery on Sunday" });
+        var stale = await admin.PutAsJsonAsync($"/api/customers/{c.Id}", c with { Note = "Wants delivery on Sunday" });
 
         Assert.Equal(HttpStatusCode.OK, first.StatusCode);
         Assert.Equal(HttpStatusCode.Conflict, stale.StatusCode);
@@ -80,14 +112,17 @@ public class CustomerTests(ApiFixture api)
     [Fact]
     public async Task Switched_off_customers_are_hidden_unless_asked_for()
     {
-        var salesman = await api.SignInAsync(ApiFixture.SalesmanUser);
+        var manager = await api.SignInAsync(ApiFixture.ManagerUser);
         var name = ApiFixture.UniqueName("Hamza");
-        var c = await CreateAsync(salesman, name, "0301-6655443");
+        var phone = "0301-" + Random.Shared.Next(1_000_000, 9_999_999);
+        var c = await CreateAsync(manager, name, phone);
 
-        await salesman.PutAsJsonAsync($"/api/customers/{c.Id}", c with { IsActive = false });
+        await manager.PutAsJsonAsync($"/api/customers/{c.Id}", c with { IsActive = false });
 
-        Assert.DoesNotContain(await salesman.GetFromJsonAsync<List<CustomerDto>>($"/api/customers?q={name}") ?? [], x => x.Id == c.Id);
-        Assert.Contains(await salesman.GetFromJsonAsync<List<CustomerDto>>($"/api/customers?q={name}&includeInactive=true") ?? [], x => x.Id == c.Id);
+        Assert.DoesNotContain(await manager.GetFromJsonAsync<List<CustomerDto>>($"/api/customers?q={name}") ?? [], x => x.Id == c.Id);
+        Assert.Contains(await manager.GetFromJsonAsync<List<CustomerDto>>($"/api/customers?q={name}&includeInactive=true") ?? [], x => x.Id == c.Id);
+        var salesman = await api.SignInAsync(ApiFixture.SalesmanUser);
+        Assert.DoesNotContain(await salesman.GetFromJsonAsync<List<CustomerDto>>($"/api/customers/lookup?phone={phone}") ?? [], x => x.Id == c.Id);
     }
 
     [Fact]

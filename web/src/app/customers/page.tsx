@@ -1,24 +1,34 @@
 "use client";
 
-import { Pencil, Search, UserPlus } from "lucide-react";
+import { Pencil, Search } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useDeferredValue, useState } from "react";
 import { QuickAddForm } from "@/components/QuickAddForm";
 import { SwitchActiveButton } from "@/components/SwitchActiveButton";
 import { ResponsiveTable } from "@/components/ResponsiveTable";
-import { Badge, Button, LoadState, PageHeader, PrototypeNote } from "@/components/ui";
+import { Badge, Button, Card, LoadState, PageHeader, PrototypeNote } from "@/components/ui";
 import { api, errorKey, useApiQuery } from "@/lib/api";
 import type { CustomerDto } from "@/lib/api-types";
+import { useCan } from "@/lib/session";
 
-type Editing = { mode: "add" } | { mode: "edit"; customer: CustomerDto } | null;
-
+/**
+ * The customer list, for Manager and Admin only. Customers are added while taking a Sale Order,
+ * so there is no "Add customer" button here.
+ */
 export default function CustomersPage() {
+  const te = useTranslations("errors");
+  const canManage = useCan("customers.manage");
+  if (!canManage) return <Card className="p-6 text-center text-sm text-zinc-600">{te("notAllowed")}</Card>;
+  return <CustomerList />;
+}
+
+function CustomerList() {
   const t = useTranslations("customers");
   const tc = useTranslations("common");
   const te = useTranslations("errors");
   const [query, setQuery] = useState("");
   const [showInactive, setShowInactive] = useState(false);
-  const [editing, setEditing] = useState<Editing>(null);
+  const [editing, setEditing] = useState<CustomerDto | null>(null);
   const [problem, setProblem] = useState<unknown>(null);
   const deferredQuery = useDeferredValue(query.trim());
 
@@ -36,34 +46,15 @@ export default function CustomersPage() {
 
   return (
     <>
-      <PageHeader
-        title={t("title")}
-        subtitle={t("subtitle")}
-        actions={
-          editing === null && (
-            <Button onClick={() => setEditing({ mode: "add" })}>
-              <UserPlus className="size-4" /> {t("add")}
-            </Button>
-          )
-        }
-      />
+      <PageHeader title={t("title")} subtitle={t("subtitle")} />
       {editing !== null && (
         <QuickAddForm
-          key={editing.mode === "edit" ? editing.customer.id : "add"}
-          title={editing.mode === "edit" ? t("editTitle") : t("addTitle")}
+          key={editing.id}
+          title={t("editTitle")}
           fields={fields}
-          initial={
-            editing.mode === "edit"
-              ? { name: editing.customer.name, phone: editing.customer.phone, address: editing.customer.address ?? "", note: editing.customer.note ?? "" }
-              : {}
-          }
+          initial={{ name: editing.name, phone: editing.phone, address: editing.address ?? "", note: editing.note ?? "" }}
           onSave={async (v) => {
-            if (editing.mode === "edit") {
-              const c = editing.customer;
-              await api(`/api/customers/${c.id}`, { method: "PUT", json: { ...v, isActive: c.isActive, version: c.version } });
-            } else {
-              await api("/api/customers", { method: "POST", json: v });
-            }
+            await api(`/api/customers/${editing.id}`, { method: "PUT", json: { ...v, isActive: editing.isActive, version: editing.version } });
             setEditing(null);
             reload();
           }}
@@ -122,7 +113,7 @@ export default function CustomersPage() {
               align: "end",
               render: (c) => (
                 <span className="inline-flex flex-wrap justify-end gap-1">
-                  <Button variant="ghost" className="min-h-9 px-2" onClick={() => setEditing({ mode: "edit", customer: c })} aria-label={`${tc("edit")} ${c.name}`}>
+                  <Button variant="ghost" className="min-h-9 px-2" onClick={() => setEditing(c)} aria-label={`${tc("edit")} ${c.name}`}>
                     <Pencil className="size-4" />
                   </Button>
                   <SwitchActiveButton

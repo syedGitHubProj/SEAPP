@@ -17,7 +17,12 @@ public static class Permissions
 {
     public const string CatalogView = "catalog.view";
     public const string CatalogEdit = "catalog.edit";
+    /// <summary>Find a customer by exact phone number and add a new one while taking a Sale Order.</summary>
     public const string CustomersEdit = "customers.edit";
+    /// <summary>Browse the customer list and edit or switch off customers.</summary>
+    public const string CustomersManage = "customers.manage";
+    /// <summary>See catalogue prices (base price, material surcharges, accessory prices).</summary>
+    public const string CatalogPrices = "catalog.prices";
     public const string SaleOrdersEdit = "saleOrders.edit";
     public const string PurchaseOrdersCreate = "purchaseOrders.create";
     public const string FactoriesEdit = "factories.edit";
@@ -28,7 +33,7 @@ public static class Permissions
 
     public static readonly string[] All =
     [
-        CatalogView, CatalogEdit, CustomersEdit, SaleOrdersEdit, PurchaseOrdersCreate,
+        CatalogView, CatalogEdit, CatalogPrices, CustomersEdit, CustomersManage, SaleOrdersEdit, PurchaseOrdersCreate,
         FactoriesEdit, OperationsManage, UsersManage, SettingsManage, AuditView,
     ];
 
@@ -36,7 +41,7 @@ public static class Permissions
         [CatalogView, CustomersEdit, SaleOrdersEdit, PurchaseOrdersCreate];
 
     private static readonly string[] ManagerPermissions =
-        [.. SalesmanPermissions, CatalogEdit, FactoriesEdit, OperationsManage];
+        [.. SalesmanPermissions, CatalogEdit, CatalogPrices, CustomersManage, FactoriesEdit, OperationsManage];
 
     public static readonly IReadOnlyDictionary<string, string[]> ByRole = new Dictionary<string, string[]>
     {

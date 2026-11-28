@@ -6,12 +6,16 @@ export interface DesignChoice {
   accessoryIds: string[];
 }
 
-/** Catalogue price for one piece: base price + material surcharge + chosen accessories. */
-export function catalogUnitPrice(design: Pick<DesignDto, "basePrice" | "materials" | "accessories">, choice: DesignChoice): number {
+/**
+ * Catalogue price for one piece: base price + material surcharge + chosen accessories.
+ * Null when the person may not see prices (the API leaves them out for a Salesman).
+ */
+export function catalogUnitPrice(design: Pick<DesignDto, "basePrice" | "materials" | "accessories">, choice: DesignChoice): number | null {
+  if (design.basePrice === null) return null;
   const surcharge = design.materials.find((m) => m.id === choice.materialId)?.surcharge ?? 0;
   const accessories = design.accessories
     .filter((a) => a.id !== null && choice.accessoryIds.includes(a.id))
-    .reduce((sum, a) => sum + a.price, 0);
+    .reduce((sum, a) => sum + (a.price ?? 0), 0);
   return design.basePrice + surcharge + accessories;
 }
 

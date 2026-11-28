@@ -34,11 +34,13 @@ public sealed partial class Validator
     public Validator Phone(string field, string? value)
     {
         Required(field, value, 30);
-        return value is not null && DigitsOf(value).Length is > 0 and < 7 ? Add(field, "invalidPhone") : this;
+        return value is not null && DigitsOf(value).Length is > 0 and < MinPhoneDigits ? Add(field, "invalidPhone") : this;
     }
 
     public IResult Problem() =>
         Results.ValidationProblem(_errors.ToDictionary(e => e.Key, e => e.Value.ToArray()));
+
+    public const int MinPhoneDigits = 7;
 
     public static string DigitsOf(string value) => new(value.Where(char.IsAsciiDigit).ToArray());
 

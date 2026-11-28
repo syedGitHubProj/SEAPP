@@ -44,7 +44,8 @@ export interface CategoryDto {
 export interface MaterialDto {
   id: string | null;
   name: string;
-  surcharge: number;
+  /** Null for roles that may not see prices (Salesman). */
+  surcharge: number | null;
 }
 
 export interface ColorDto {
@@ -56,7 +57,8 @@ export interface ColorDto {
 export interface AccessoryDto {
   id: string | null;
   name: string;
-  price: number;
+  /** Null for roles that may not see prices (Salesman). */
+  price: number | null;
 }
 
 export interface PhotoDto {
@@ -69,7 +71,8 @@ export interface DesignDto {
   code: string;
   name: string;
   categoryId: string;
-  basePrice: number;
+  /** Null for roles that may not see prices (Salesman). */
+  basePrice: number | null;
   dimensions: string | null;
   wood: string | null;
   description: string | null;

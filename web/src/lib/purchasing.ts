@@ -11,7 +11,7 @@ export interface SalesOrderLine {
   description: string;
   quantity: number;
   /** Catalogue price per piece (design + material + accessories). */
-  listUnitPrice: number;
+  listUnitPrice: number | null;
   /** Price per piece agreed with the customer. */
   agreedUnitPrice: number;
 }
@@ -32,7 +32,7 @@ export const salesOrderTotal = (lines: SalesOrderLine[]) =>
 
 /** How much below the catalogue price the agreed price is (0 if not discounted). */
 export const discountGiven = (lines: SalesOrderLine[]) =>
-  lines.reduce((sum, l) => sum + Math.max(0, l.listUnitPrice - l.agreedUnitPrice) * l.quantity, 0);
+  lines.reduce((sum, l) => sum + Math.max(0, (l.listUnitPrice ?? l.agreedUnitPrice) - l.agreedUnitPrice) * l.quantity, 0);
 
 export const poLineTotal = (l: PurchaseOrderLine) => l.unitCost * l.quantity;
 

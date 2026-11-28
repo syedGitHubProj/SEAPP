@@ -50,10 +50,11 @@ function Customiser({ design, categoryName }: { design: DesignDto; categoryName:
   // null = follow the catalogue price; a string = the salesman typed an agreed price.
   const [agreedText, setAgreedText] = useState<string | null>(null);
 
+  // Null when prices are hidden (Salesman): then the agreed price must be typed in.
   const listUnit = catalogUnitPrice(design, { materialId, accessoryIds });
   const typed = agreedText === null ? null : Number(agreedText.replace(/[^\d]/g, "")) || 0;
-  const agreedUnit = typed ?? listUnit;
-  const discount = Math.max(0, listUnit - agreedUnit) * quantity;
+  const agreedUnit = typed ?? listUnit ?? 0;
+  const discount = listUnit === null ? 0 : Math.max(0, listUnit - agreedUnit) * quantity;
   const total = agreedUnit * quantity;
 
   const toggleAccessory = (id: string) =>
@@ -111,7 +112,7 @@ function Customiser({ design, categoryName }: { design: DesignDto; categoryName:
               <h1 className="text-xl font-semibold text-brand-900">{design.name}</h1>
               <p className="text-sm text-zinc-500">{design.code}</p>
             </div>
-            <Money amount={design.basePrice} className="text-lg font-semibold" />
+            {design.basePrice !== null && <Money amount={design.basePrice} className="text-lg font-semibold" />}
           </div>
         </Card>
 
@@ -153,7 +154,7 @@ function Customiser({ design, categoryName }: { design: DesignDto; categoryName:
                       }`}
                     >
                       {m.name}
-                      {m.surcharge > 0 && <span className="ms-1 opacity-80">(+<Money amount={m.surcharge} />)</span>}
+                      {m.surcharge !== null && m.surcharge > 0 && <span className="ms-1 opacity-80">(+<Money amount={m.surcharge} />)</span>}
                     </button>
                   ))}
                 </div>
@@ -196,7 +197,7 @@ function Customiser({ design, categoryName }: { design: DesignDto; categoryName:
                         />
                         {a.name}
                       </span>
-                      <span className="text-sm text-zinc-600">+<Money amount={a.price} /></span>
+                      {a.price !== null && <span className="text-sm text-zinc-600">+<Money amount={a.price} /></span>}
                     </label>
                   ))}
                 </div>
@@ -218,19 +219,21 @@ function Customiser({ design, categoryName }: { design: DesignDto; categoryName:
           )}
 
           <div className="mt-6 space-y-3 border-t border-black/5 pt-4">
-            <div className="flex justify-between text-sm">
-              <span className="text-zinc-600">{t("catalogPrice")}</span>
-              <Money amount={listUnit} />
-            </div>
+            {listUnit !== null && (
+              <div className="flex justify-between text-sm">
+                <span className="text-zinc-600">{t("catalogPrice")}</span>
+                <Money amount={listUnit} />
+              </div>
+            )}
             <label className="block text-sm">
-              <span className="mb-1 block font-semibold">{t("agreedPrice")}</span>
+              <span className="mb-1 block font-semibold">{t("agreedPrice")}{listUnit === null && " *"}</span>
               <input
                 inputMode="numeric"
-                value={agreedText ?? String(listUnit)}
+                value={agreedText ?? (listUnit === null ? "" : String(listUnit))}
                 onChange={(e) => setAgreedText(e.target.value)}
                 className="min-h-11 w-full rounded-xl border border-black/10 px-3 font-semibold tabular-nums"
               />
-              <span className="mt-1 block text-xs text-zinc-500">{t("agreedPriceHint")}</span>
+              <span className="mt-1 block text-xs text-zinc-500">{t(listUnit === null ? "agreedPriceTypeHint" : "agreedPriceHint")}</span>
             </label>
             {discount > 0 && (
               <p className="text-sm text-amber-800">

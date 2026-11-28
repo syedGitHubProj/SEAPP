@@ -43,14 +43,14 @@ function toForm(d: DesignDto | undefined): Form {
     code: d?.code ?? "",
     name: d?.name ?? "",
     categoryId: d?.categoryId ?? "",
-    basePrice: d ? String(d.basePrice) : "",
+    basePrice: d ? String(d.basePrice ?? "") : "",
     dimensions: d?.dimensions ?? "",
     wood: d?.wood ?? "",
     description: d?.description ?? "",
     isActive: d?.isActive ?? true,
-    materials: (d?.materials ?? []).map((m) => ({ key: m.id!, id: m.id, name: m.name, value: String(m.surcharge) })),
+    materials: (d?.materials ?? []).map((m) => ({ key: m.id!, id: m.id, name: m.name, value: String(m.surcharge ?? 0) })),
     colors: (d?.colors ?? []).map((c) => ({ key: c.id!, id: c.id, name: c.name, value: c.hex })),
-    accessories: (d?.accessories ?? []).map((a) => ({ key: a.id!, id: a.id, name: a.name, value: String(a.price) })),
+    accessories: (d?.accessories ?? []).map((a) => ({ key: a.id!, id: a.id, name: a.name, value: String(a.price ?? 0) })),
   };
 }
 

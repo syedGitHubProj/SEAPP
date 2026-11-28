@@ -17,6 +17,7 @@ import {
   salesOrderTotal,
   soLineTotal,
 } from "@/lib/purchasing";
+import { useCan } from "@/lib/session";
 
 export function OrderDetail() {
   const t = useTranslations("orderDetail");
@@ -26,6 +27,8 @@ export function OrderDetail() {
   const salesOrders = useSalesOrders();
   const purchaseOrders = usePurchaseOrders();
   const so = salesOrders.find((o) => o.number === number);
+  // A Salesman sees only the agreed selling prices: no catalogue prices, factory costs or margin.
+  const seesPrices = useCan("catalog.prices");
 
   if (!so) {
     return (
@@ -92,7 +95,7 @@ export function OrderDetail() {
             render: (l) => (
               <span className="inline-flex flex-col items-end">
                 <Money amount={l.agreedUnitPrice} />
-                {l.agreedUnitPrice < l.listUnitPrice && (
+                {seesPrices && l.listUnitPrice !== null && l.agreedUnitPrice < l.listUnitPrice && (
                   <s className="text-xs text-zinc-400"><Money amount={l.listUnitPrice} /></s>
                 )}
               </span>
@@ -114,30 +117,38 @@ export function OrderDetail() {
               );
             },
           },
-          {
-            key: "cost",
-            label: t("factoryCost"),
-            align: "end",
-            render: (l) => {
-              const hit = findPoLine(so.number, l.id, purchaseOrders);
-              return hit ? <Money amount={hit.line.unitCost * hit.line.quantity} /> : "—";
-            },
-          },
+          ...(seesPrices
+            ? [
+                {
+                  key: "cost",
+                  label: t("factoryCost"),
+                  align: "end" as const,
+                  render: (l: (typeof so.lines)[number]) => {
+                    const hit = findPoLine(so.number, l.id, purchaseOrders);
+                    return hit ? <Money amount={hit.line.unitCost * hit.line.quantity} /> : "—";
+                  },
+                },
+              ]
+            : []),
         ]}
       />
 
       <Card className="mt-5 ms-auto max-w-sm p-4">
         <dl className="space-y-1.5 text-sm">
-          {discount > 0 && (
+          {seesPrices && discount > 0 && (
             <div className="flex justify-between"><dt className="text-zinc-600">{t("discount")}</dt><dd><Money amount={discount} /></dd></div>
           )}
           <div className="flex justify-between font-semibold"><dt>{t("orderTotal")}</dt><dd><Money amount={total} /></dd></div>
           <div className="flex justify-between"><dt className="text-zinc-600">{t("received")}</dt><dd><Money amount={so.paid} /></dd></div>
-          <div className="flex justify-between"><dt className="text-zinc-600">{t("factoryCostTotal")}</dt><dd><Money amount={factoryCost} /></dd></div>
-          <div className="flex justify-between border-t border-black/5 pt-2 font-semibold">
-            <dt>{t("grossMargin")}</dt>
-            <dd>{awaiting.length > 0 ? <span className="text-xs font-normal text-zinc-500">{t("marginPending")}</span> : <Money amount={total - factoryCost} />}</dd>
-          </div>
+          {seesPrices && (
+            <>
+              <div className="flex justify-between"><dt className="text-zinc-600">{t("factoryCostTotal")}</dt><dd><Money amount={factoryCost} /></dd></div>
+              <div className="flex justify-between border-t border-black/5 pt-2 font-semibold">
+                <dt>{t("grossMargin")}</dt>
+                <dd>{awaiting.length > 0 ? <span className="text-xs font-normal text-zinc-500">{t("marginPending")}</span> : <Money amount={total - factoryCost} />}</dd>
+              </div>
+            </>
+          )}
         </dl>
       </Card>
     </>
