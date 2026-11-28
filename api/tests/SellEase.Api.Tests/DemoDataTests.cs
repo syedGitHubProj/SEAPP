@@ -44,12 +44,18 @@ public class DemoDataLoadTests(ApiFixture api)
         }
 
         var (sofa, factories, staffAfter) = await api.WithDbAsync(async db => (
-            await db.Designs.Include(d => d.Accessories).SingleAsync(d => d.Code == "SF-310"),
+            await db.Designs.Include(d => d.Items).SingleAsync(d => d.Code == "SF-310"),
             await db.Factories.CountAsync(f => f.Name == "Chiniot Royal Works"),
             await db.Users.CountAsync()));
 
-        Assert.Equal(125_000m, sofa.BasePrice);
-        Assert.Contains(sofa.Accessories, a => a.Name == "Centre table" && a.Price == 25_000m);
+        var itemNames = await api.WithDbAsync(db => db.CategoryItems.ToDictionaryAsync(i => i.Id, i => i.Name));
+        Assert.Contains(sofa.Items, i => itemNames[i.CategoryItemId] == "Centre table" && i.Price == 25_000m && !i.IsDefault);
+        Assert.Contains(sofa.Items, i => itemNames[i.CategoryItemId] == "3 seater sofa" && i.IsDefault);
+        var shandar = await api.WithDbAsync(db => db.Designs.Include(d => d.Items).SingleAsync(d => d.Code == "BD-210"));
+        // The owner's example: Bed king, Almari 4 door, Side table and Dressing table ticked by default.
+        Assert.Equal(["Bed king", "Almari 4 door", "Side table", "Dressing table"],
+            shandar.Items.OrderBy(i => i.SortOrder).Where(i => i.IsDefault).Select(i => itemNames[i.CategoryItemId]));
+        Assert.Equal(4, await api.WithDbAsync(db => db.OtherItems.CountAsync(i => new[] { "Mirror", "Locks & Handles", "Lights", "Mattress" }.Contains(i.Name))));
         Assert.Equal(1, factories); // running it twice does not add copies
         Assert.Equal(staffBefore, staffAfter); // never any staff accounts
     }

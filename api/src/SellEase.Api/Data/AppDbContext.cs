@@ -16,6 +16,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Factory> Factories => Set<Factory>();
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Design> Designs => Set<Design>();
+    public DbSet<CategoryItem> CategoryItems => Set<CategoryItem>();
+    public DbSet<OtherItem> OtherItems => Set<OtherItem>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configuration)
     {
@@ -84,6 +86,26 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
         {
             e.Property(x => x.Name).HasMaxLength(100);
             e.HasIndex(x => x.Name).IsUnique();
+            e.HasMany(x => x.Items).WithOne().HasForeignKey(x => x.CategoryId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<CategoryItem>(e =>
+        {
+            e.Property(x => x.Name).HasMaxLength(100);
+            e.HasIndex(x => new { x.CategoryId, x.Name }).IsUnique();
+        });
+
+        b.Entity<OtherItem>(e =>
+        {
+            e.Property(x => x.Name).HasMaxLength(200);
+            e.HasIndex(x => x.Name).IsUnique();
+        });
+
+        b.Entity<DesignItem>(e =>
+        {
+            e.ToTable("DesignItems");
+            e.HasOne<CategoryItem>().WithMany().HasForeignKey(x => x.CategoryItemId).OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => new { x.DesignId, x.CategoryItemId }).IsUnique();
         });
 
         b.Entity<Design>(e =>
@@ -97,6 +119,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             e.HasOne<Category>().WithMany().HasForeignKey(x => x.CategoryId).OnDelete(DeleteBehavior.Restrict);
             e.HasMany(x => x.Materials).WithOne().HasForeignKey(x => x.DesignId).OnDelete(DeleteBehavior.Cascade);
             e.HasMany(x => x.Colors).WithOne().HasForeignKey(x => x.DesignId).OnDelete(DeleteBehavior.Cascade);
+            e.HasMany(x => x.Items).WithOne().HasForeignKey(x => x.DesignId).OnDelete(DeleteBehavior.Cascade);
             e.HasMany(x => x.Accessories).WithOne().HasForeignKey(x => x.DesignId).OnDelete(DeleteBehavior.Cascade);
             e.HasMany(x => x.Photos).WithOne().HasForeignKey(x => x.DesignId).OnDelete(DeleteBehavior.Cascade);
         });

@@ -30,9 +30,10 @@ export interface DraftItem {
   materialName: string | null;
   colorName: string | null;
   colorHex: string | null;
-  accessories: { name: string; price: number | null }[];
+  /** The chosen items with their quantities, e.g. Bed king ×1, Side table ×2. Empty for an "other item". */
+  items: { name: string; quantity: number; price: number | null }[];
   quantity: number;
-  /** Catalogue price per piece (base + material + accessories); null when hidden from a Salesman. */
+  /** Catalogue price of one set (chosen items + material); null when hidden from a Salesman. */
   listUnitPrice: number | null;
   /** Price per piece agreed with the customer (may be below the catalogue price). */
   agreedUnitPrice: number;
@@ -62,8 +63,8 @@ interface State {
   purchases: PurchaseOrder[];
 }
 
-// v3: draft items keep a snapshot of the API design (older saved drafts are ignored).
-const STORAGE_KEY = "sellease-prototype-v3";
+// v4: draft items list the chosen design items with quantities (older saved drafts are ignored).
+const STORAGE_KEY = "sellease-prototype-v4";
 
 const emptyDraft: Draft = { items: [], customerId: null, customerName: null, newCustomer: null, deliveryDate: "" };
 const initialState: State = { draft: emptyDraft, placed: [], purchases: [] };
@@ -161,9 +162,11 @@ export function createPurchaseOrder(po: PurchaseOrder) {
   update((s) => ({ ...s, purchases: [po, ...s.purchases] }));
 }
 
-/** Short description of a draft item's choices, e.g. "Leather · Bottle green · Centre table". */
+/** Short description of a draft item's choices, e.g. "Bed king · Side table ×2 · Teak · Walnut". */
 export const draftItemOptions = (item: DraftItem) =>
-  [item.materialName, item.colorName, ...item.accessories.map((a) => a.name)].filter(Boolean).join(" · ");
+  [...(item.items ?? []).map((i) => (i.quantity > 1 ? `${i.name} ×${i.quantity}` : i.name)), item.materialName, item.colorName]
+    .filter(Boolean)
+    .join(" · ");
 
 export const draftItemTotal = (item: DraftItem) => item.agreedUnitPrice * item.quantity;
 

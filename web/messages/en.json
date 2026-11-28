@@ -59,7 +59,8 @@
     "add": "Add",
     "remove": "Remove",
     "switchOff": "Switch off",
-    "switchOn": "Switch on"
+    "switchOn": "Switch on",
+    "close": "Close"
   },
   "orderStatus": {
     "draft": "Draft",
@@ -210,31 +211,30 @@
     "all": "All",
     "edit": "Edit design",
     "inactiveBadge": "Switched off",
-    "manageCategories": "Categories"
+    "manageCategories": "Categories",
+    "otherItems": "Other items",
+    "manageOtherItems": "Other items",
+    "noOtherItems": "No other items match."
   },
   "customise": {
     "back": "Back to catalogue",
-    "customise": "Customise",
-    "details": "Details",
-    "dimensions": "Dimensions",
-    "wood": "Wood",
     "description": "Description",
     "material": "Fabric / material",
     "color": "Colour",
-    "colorOption": "Colour {n}",
-    "accessories": "Accessories (optional)",
-    "quantity": "Quantity",
-    "less": "Decrease quantity",
-    "more": "Increase quantity",
-    "totalPrice": "Total price",
+    "less": "Fewer: {name}",
+    "more": "More: {name}",
     "addToOrder": "Add to Sale Order",
-    "catalogPrice": "Catalogue price (per piece)",
-    "agreedPrice": "Agreed selling price (per piece)",
-    "agreedPriceHint": "The price agreed with the customer. Change it if you give a discount.",
-    "agreedPriceTypeHint": "Type the price per piece agreed with the customer.",
+    "catalogPrice": "Catalogue price (chosen items)",
+    "agreedPrice": "Agreed selling price (for the chosen items)",
+    "agreedPriceHint": "The price agreed with the customer for the chosen items. Change it if you give a discount.",
+    "agreedPriceTypeHint": "Type the price agreed with the customer for the chosen items.",
     "discount": "Discount from catalogue",
     "notFound": "This design isn't in the catalogue (it may have been switched off).",
-    "editDesign": "Edit design"
+    "editDesign": "Edit design",
+    "items": "Items",
+    "itemsHint": "Tick the items the customer wants and set how many of each.",
+    "quantityOf": "How many: {name}",
+    "itemsChosen": "{count, plural, =0 {No items chosen} one {# item chosen} other {# items chosen}}"
   },
   "newOrder": {
     "title": "New Sale Order",
@@ -547,7 +547,8 @@
     "PasswordRequiresLower": "Password needs a small letter",
     "PasswordRequiresUpper": "Password needs a capital letter",
     "PasswordRequiresNonAlphanumeric": "Password needs a symbol",
-    "invalid": "Not valid"
+    "invalid": "Not valid",
+    "unknownItem": "Not one of this category's items."
   },
   "designEditor": {
     "newTitle": "New design",
@@ -558,10 +559,17 @@
     "name": "Design name",
     "category": "Category",
     "chooseCategory": "Choose a category",
-    "basePrice": "Base price (per piece)",
-    "dimensions": "Dimensions",
-    "wood": "Wood",
     "description": "Description",
+    "items": "Items in this design",
+    "itemsHint": "Tick the items this design offers, give each its price, and tick the ones chosen at first. The items come from the category's list.",
+    "manageItems": "Category items",
+    "chooseCategoryFirst": "Choose a category to see its items.",
+    "noCategoryItems": "{category} has no items yet. Add them under Catalogue → Categories → Items.",
+    "itemPrice": "Price for {name}",
+    "price": "Price",
+    "itemDefault": "Ticked by default: {name}",
+    "tickedByDefault": "Ticked by default",
+    "defaultTotal": "Price of the items ticked by default",
     "materials": "Fabric / material choices",
     "materialName": "Material",
     "surcharge": "Extra charge",
@@ -570,10 +578,6 @@
     "colorName": "Colour name",
     "colorSwatch": "Swatch",
     "addColor": "Add colour",
-    "accessories": "Optional accessories",
-    "accessoryName": "Accessory",
-    "accessoryPrice": "Price",
-    "addAccessory": "Add accessory",
     "removeRow": "Remove {name}",
     "active": "Show in the catalogue",
     "activeHint": "Switch off instead of deleting: old Sale Orders still refer to this design.",
@@ -599,7 +603,17 @@
     "orderHint": "Smaller numbers show first, e.g. 10, 20, 30.",
     "empty": "No categories yet.",
     "switchOffConfirm": "Switch off {name}? It disappears from the catalogue filters. Its designs stay in the catalogue under \"All\". You can switch it on again any time.",
-    "help": "Categories are never deleted, because designs and old Sale Orders refer to them. Switch one off instead."
+    "help": "Categories are never deleted, because designs and old Sale Orders refer to them. Switch one off instead.",
+    "items": "Items",
+    "itemCount": "{count, plural, =0 {No items} one {# item} other {# items}}",
+    "itemsFor": "Items for {name}",
+    "itemsHelp": "Designs in this category pick from these items and set their own price for each.",
+    "addItem": "Add item",
+    "editItem": "Edit item",
+    "itemName": "Item name",
+    "itemPlaceholder": "e.g. Bed king",
+    "noItems": "No items yet. Add the pieces this category's designs are made of, e.g. Bed king, Almari 4 door.",
+    "itemSwitchOffConfirm": "Switch off {name}? Designs stop offering it on new Sale Orders. Old Sale Orders keep it. You can switch it on again any time."
   },
   "customerPicker": {
     "label": "Customer's phone number",
@@ -660,5 +674,32 @@
       "RoleChanged": "Role changed for",
       "PasswordReset": "Password reset for"
     }
+  },
+  "otherItems": {
+    "title": "Other items",
+    "subtitle": "Things sold without a design, such as mirrors, locks & handles, lights and mattresses.",
+    "back": "Catalogue",
+    "add": "Add item",
+    "addTitle": "New item",
+    "editTitle": "Edit item",
+    "name": "Name",
+    "price": "Price (per piece)",
+    "order": "Position",
+    "empty": "No other items yet.",
+    "switchOffConfirm": "Switch off {name}? It disappears from the catalogue. Old Sale Orders keep it. You can switch it on again any time.",
+    "help": "Items are never deleted, because old Sale Orders refer to them. Switch one off instead. Salesmen see the items but not their prices."
+  },
+  "sellItem": {
+    "back": "Back to catalogue",
+    "notFound": "This item isn't in the catalogue (it may have been switched off).",
+    "quantity": "Quantity",
+    "less": "Decrease quantity",
+    "more": "Increase quantity",
+    "price": "Catalogue price (per piece)",
+    "agreedPrice": "Agreed selling price (per piece)",
+    "agreedPriceHint": "The price agreed with the customer. Change it if you give a discount.",
+    "agreedPriceTypeHint": "Type the price per piece agreed with the customer.",
+    "total": "Total",
+    "add": "Add to Sale Order"
   }
 }

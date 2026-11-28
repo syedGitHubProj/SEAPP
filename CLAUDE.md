@@ -30,6 +30,7 @@ SellEase is a furniture showroom app for ABC Furniture in Pakistan. It covers th
 - **Roles:** Admin can do everything. Manager can do everything except user/settings administration, including adding designs and factories. Salesman: Sale Orders, payments, and factory orders against a Sale Order. The full table is in `docs/PLAN.md`.
 - **Salesman limits (owner, 2026-11-28):** no customer list (finds a customer by full phone number on a Sale Order, or adds a new one there); never sees catalogue prices, factory costs or margins (types the agreed price); sees only their own Sale Orders and factory orders (Phase 3); their factory orders have no cost and need a Manager's approval, where the Manager enters the cost (Phase 3).
 - **Customers** are created only on a Sale Order; there is no "Add customer" button.
+- **Catalogue (owner, 2026-11-28):** a design has no base price; its price is the sum of the chosen items. Each category keeps an item list; each design offers some of those items with its own price and default ticks; the salesman picks items with quantities. "Other items" (mirror, lights…) are a separate price list sold without a design.
 - **Wording:** customer orders are called **Sale Orders** on screen.
 - **Order snapshots:** order lines save the design, specifications and price at the time of sale.
 - **Order statuses:** fulfilment status and payment status are tracked separately.

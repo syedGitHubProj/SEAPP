@@ -370,6 +370,46 @@ namespace SellEase.Api.Data.Migrations
                     b.ToTable("Categories");
                 });
 
+            modelBuilder.Entity("SellEase.Api.Domain.CategoryItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CategoryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoryId", "Name")
+                        .IsUnique();
+
+                    b.ToTable("CategoryItems");
+                });
+
             modelBuilder.Entity("SellEase.Api.Domain.Customer", b =>
                 {
                     b.Property<Guid>("Id")
@@ -437,7 +477,7 @@ namespace SellEase.Api.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<decimal>("BasePrice")
+                    b.Property<decimal?>("BasePrice")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
 
@@ -546,6 +586,38 @@ namespace SellEase.Api.Data.Migrations
                     b.HasIndex("DesignId");
 
                     b.ToTable("DesignColors", (string)null);
+                });
+
+            modelBuilder.Entity("SellEase.Api.Domain.DesignItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CategoryItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("DesignId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("boolean");
+
+                    b.Property<decimal>("Price")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoryItemId");
+
+                    b.HasIndex("DesignId", "CategoryItemId")
+                        .IsUnique();
+
+                    b.ToTable("DesignItems", (string)null);
                 });
 
             modelBuilder.Entity("SellEase.Api.Domain.DesignMaterial", b =>
@@ -685,6 +757,47 @@ namespace SellEase.Api.Data.Migrations
                     b.ToTable("NumberSequences");
                 });
 
+            modelBuilder.Entity("SellEase.Api.Domain.OtherItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<decimal>("Price")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("OtherItems");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", null)
@@ -745,6 +858,15 @@ namespace SellEase.Api.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("SellEase.Api.Domain.CategoryItem", b =>
+                {
+                    b.HasOne("SellEase.Api.Domain.Category", null)
+                        .WithMany("Items")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("SellEase.Api.Domain.Design", b =>
                 {
                     b.HasOne("SellEase.Api.Domain.Category", null)
@@ -772,6 +894,21 @@ namespace SellEase.Api.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("SellEase.Api.Domain.DesignItem", b =>
+                {
+                    b.HasOne("SellEase.Api.Domain.CategoryItem", null)
+                        .WithMany()
+                        .HasForeignKey("CategoryItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SellEase.Api.Domain.Design", null)
+                        .WithMany("Items")
+                        .HasForeignKey("DesignId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("SellEase.Api.Domain.DesignMaterial", b =>
                 {
                     b.HasOne("SellEase.Api.Domain.Design", null)
@@ -790,11 +927,18 @@ namespace SellEase.Api.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("SellEase.Api.Domain.Category", b =>
+                {
+                    b.Navigation("Items");
+                });
+
             modelBuilder.Entity("SellEase.Api.Domain.Design", b =>
                 {
                     b.Navigation("Accessories");
 
                     b.Navigation("Colors");
+
+                    b.Navigation("Items");
 
                     b.Navigation("Materials");
 

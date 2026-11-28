@@ -1,11 +1,11 @@
 "use client";
 
-import { ArrowLeft, ImagePlus, Plus, Star, Trash2 } from "lucide-react";
+import { ArrowLeft, ImagePlus, Plus, Star, Tags, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState, type ReactNode } from "react";
-import { Button, Card, LoadState, PageHeader } from "@/components/ui";
+import { Button, Card, LinkButton, LoadState, Money, PageHeader } from "@/components/ui";
 import { api, ApiError, errorKey, useApiQuery } from "@/lib/api";
 import type { CategoryDto, DesignDto, PhotoDto } from "@/lib/api-types";
 import { parseAmount } from "@/lib/catalog";
@@ -17,22 +17,29 @@ interface Row {
   key: string;
   id: string | null;
   name: string;
-  /** Money for materials/accessories, swatch colour for colours. */
+  /** Money for materials, swatch colour for colours. */
   value: string;
+}
+
+/** One of the category's items, as this design offers it (or not). */
+interface ItemRow {
+  /** The design's own row id, when the design already offers this item. */
+  id: string | null;
+  offered: boolean;
+  price: string;
+  isDefault: boolean;
 }
 
 interface Form {
   code: string;
   name: string;
   categoryId: string;
-  basePrice: string;
-  dimensions: string;
-  wood: string;
   description: string;
   isActive: boolean;
   materials: Row[];
   colors: Row[];
-  accessories: Row[];
+  /** Keyed by category item id. */
+  items: Record<string, ItemRow>;
 }
 
 let rowCounter = 0;
@@ -43,14 +50,13 @@ function toForm(d: DesignDto | undefined): Form {
     code: d?.code ?? "",
     name: d?.name ?? "",
     categoryId: d?.categoryId ?? "",
-    basePrice: d ? String(d.basePrice ?? "") : "",
-    dimensions: d?.dimensions ?? "",
-    wood: d?.wood ?? "",
     description: d?.description ?? "",
     isActive: d?.isActive ?? true,
     materials: (d?.materials ?? []).map((m) => ({ key: m.id!, id: m.id, name: m.name, value: String(m.surcharge ?? 0) })),
     colors: (d?.colors ?? []).map((c) => ({ key: c.id!, id: c.id, name: c.name, value: c.hex })),
-    accessories: (d?.accessories ?? []).map((a) => ({ key: a.id!, id: a.id, name: a.name, value: String(a.price ?? 0) })),
+    items: Object.fromEntries(
+      (d?.items ?? []).map((i) => [i.categoryItemId, { id: i.id, offered: true, price: String(i.price ?? ""), isDefault: i.isDefault }]),
+    ),
   };
 }
 
@@ -110,6 +116,14 @@ function EditorForm({ design, categories, onSaved }: { design: DesignDto | undef
     fields[name] ? <span className="mt-1 block text-xs text-red-700">{fields[name].map((c) => (te.has(c) ? te(c) : c)).join(" · ")}</span> : null;
   const border = (name: string) => (fields[name] ? "border-red-500" : "border-black/10");
 
+  // The chosen category's items, plus any switched-off ones this design still offers.
+  const category = categories.find((c) => c.id === form.categoryId);
+  const categoryItems = (category?.items ?? []).filter((i) => i.isActive || form.items[i.id]?.offered);
+  const offered = categoryItems.filter((i) => form.items[i.id]?.offered);
+  const setItem = (id: string, patch: Partial<ItemRow>) =>
+    set("items", { ...form.items, [id]: { ...(form.items[id] ?? { id: null, offered: false, price: "", isDefault: false }), ...patch } });
+  const defaultTotal = offered.filter((i) => form.items[i.id].isDefault).reduce((sum, i) => sum + (parseAmount(form.items[i.id].price) ?? 0), 0);
+
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -118,13 +132,10 @@ function EditorForm({ design, categories, onSaved }: { design: DesignDto | undef
       code: form.code,
       name: form.name,
       categoryId: form.categoryId || "00000000-0000-0000-0000-000000000000",
-      basePrice: money(form.basePrice),
-      dimensions: form.dimensions,
-      wood: form.wood,
       description: form.description,
       materials: form.materials.map((r) => ({ id: r.id, name: r.name, surcharge: money(r.value || "0") })),
       colors: form.colors.map((r) => ({ id: r.id, name: r.name, hex: r.value })),
-      accessories: form.accessories.map((r) => ({ id: r.id, name: r.name, price: money(r.value) })),
+      items: offered.map((i) => ({ id: form.items[i.id].id, categoryItemId: i.id, price: money(form.items[i.id].price), isDefault: form.items[i.id].isDefault })),
       isActive: form.isActive,
       version: design?.version ?? 0,
     };
@@ -150,7 +161,7 @@ function EditorForm({ design, categories, onSaved }: { design: DesignDto | undef
       </Link>
       <PageHeader title={design ? t("editTitle", { code: design.code }) : t("newTitle")} />
 
-      <div className="grid gap-5 lg:grid-cols-[1fr_22rem]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <form onSubmit={save} className="space-y-5">
           <Card className="grid gap-3 p-4 sm:grid-cols-2">
             <label className="text-sm">
@@ -175,25 +186,6 @@ function EditorForm({ design, categories, onSaved }: { design: DesignDto | undef
               </select>
               {fieldError("categoryId")}
             </label>
-            <label className="text-sm">
-              <span className="mb-1 block font-medium">{t("basePrice")} *</span>
-              <input
-                className={`${inputClass} ${border("basePrice")} tabular-nums`}
-                inputMode="decimal"
-                value={form.basePrice}
-                onChange={(e) => set("basePrice", e.target.value)}
-                required
-              />
-              {fieldError("basePrice")}
-            </label>
-            <label className="text-sm">
-              <span className="mb-1 block font-medium">{t("dimensions")}</span>
-              <input className={`${inputClass} ${border("dimensions")}`} value={form.dimensions} onChange={(e) => set("dimensions", e.target.value)} />
-            </label>
-            <label className="text-sm">
-              <span className="mb-1 block font-medium">{t("wood")}</span>
-              <input className={`${inputClass} ${border("wood")}`} value={form.wood} onChange={(e) => set("wood", e.target.value)} />
-            </label>
             <label className="text-sm sm:col-span-2">
               <span className="mb-1 block font-medium">{t("description")}</span>
               <textarea
@@ -211,6 +203,74 @@ function EditorForm({ design, categories, onSaved }: { design: DesignDto | undef
                   <span className="block text-xs text-zinc-500">{t("activeHint")}</span>
                 </span>
               </label>
+            )}
+          </Card>
+
+          <Card className="p-4">
+            <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <h2 className="font-semibold text-brand-900">{t("items")} *</h2>
+                <p className="text-xs text-zinc-500">{t("itemsHint")}</p>
+              </div>
+              <LinkButton href="/catalog/categories" variant="ghost" className="min-h-9">
+                <Tags className="size-4" /> {t("manageItems")}
+              </LinkButton>
+            </div>
+            {!category ? (
+              <p className="text-sm text-zinc-500">{t("chooseCategoryFirst")}</p>
+            ) : categoryItems.length === 0 ? (
+              <p className="text-sm text-zinc-500">{t("noCategoryItems", { category: category.name })}</p>
+            ) : (
+              <ul className="divide-y divide-black/5 rounded-xl border border-black/10">
+                {categoryItems.map((ci) => {
+                  const row = form.items[ci.id];
+                  const index = offered.findIndex((o) => o.id === ci.id);
+                  const problems = index >= 0 ? [...(fields[`items[${index}].price`] ?? []), ...(fields[`items[${index}].categoryItemId`] ?? [])] : [];
+                  return (
+                    <li key={ci.id} className="grid grid-cols-[1fr_8rem] items-center gap-x-3 gap-y-1 px-3 py-2 sm:grid-cols-[1fr_8rem_9rem]">
+                      <label className="flex min-h-11 items-center gap-3 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={row?.offered ?? false}
+                          onChange={(e) => setItem(ci.id, { offered: e.target.checked, ...(e.target.checked ? {} : { isDefault: false }) })}
+                          className="size-5 accent-brand-700"
+                        />
+                        <span className="font-medium">{ci.name}</span>
+                      </label>
+                      <input
+                        className={`${inputClass} ${problems.length ? "border-red-500" : "border-black/10"} tabular-nums`}
+                        inputMode="decimal"
+                        aria-label={t("itemPrice", { name: ci.name })}
+                        placeholder={t("price")}
+                        disabled={!row?.offered}
+                        value={row?.price ?? ""}
+                        onChange={(e) => setItem(ci.id, { price: e.target.value })}
+                      />
+                      <label className="col-span-2 flex min-h-9 items-center gap-2 text-xs text-zinc-700 sm:col-span-1">
+                        <input
+                          type="checkbox"
+                          checked={row?.isDefault ?? false}
+                          disabled={!row?.offered}
+                          aria-label={t("itemDefault", { name: ci.name })}
+                          onChange={(e) => setItem(ci.id, { isDefault: e.target.checked })}
+                          className="size-5 accent-brand-700"
+                        />
+                        {t("tickedByDefault")}
+                      </label>
+                      {problems.length > 0 && (
+                        <span className="col-span-full text-xs text-red-700">{problems.map((c) => (te.has(c) ? te(c) : c)).join(" · ")}</span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            {fieldError("items")}
+            {offered.length > 0 && (
+              <p className="mt-3 flex justify-between text-sm">
+                <span className="text-zinc-600">{t("defaultTotal")}</span>
+                <Money amount={defaultTotal} className="font-semibold" />
+              </p>
             )}
           </Card>
 
@@ -244,22 +304,6 @@ function EditorForm({ design, categories, onSaved }: { design: DesignDto | undef
             emptyValue="#216b44"
             valueField="hex"
           />
-          <OptionList
-            title={t("accessories")}
-            listKey="accessories"
-            rows={form.accessories}
-            onChange={(rows) => set("accessories", rows)}
-            nameLabel={t("accessoryName")}
-            valueLabel={t("accessoryPrice")}
-            addLabel={t("addAccessory")}
-            fields={fields}
-            renderValue={(row, update, invalid) => (
-              <input className={`${inputClass} ${invalid ? "border-red-500" : "border-black/10"} tabular-nums`} inputMode="decimal" value={row.value} onChange={(e) => update(e.target.value)} />
-            )}
-            emptyValue=""
-            valueField="price"
-          />
-
           {error !== null && (
             <p role="alert" className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-800">
               {te(errorKey(error))}

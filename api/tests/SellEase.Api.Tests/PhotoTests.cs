@@ -29,10 +29,7 @@ public class PhotoTests(ApiFixture api)
     private async Task<(HttpClient Manager, DesignDto Design)> NewDesignAsync()
     {
         var manager = await api.SignInAsync(ApiFixture.ManagerUser);
-        var category = (await manager.GetFromJsonAsync<List<CategoryDto>>("/api/catalog/categories"))!.First();
-        var response = await manager.PostAsJsonAsync("/api/catalog/designs",
-            new { code = "P-" + Random.Shared.Next(10_000, 99_999), name = "Photo test", categoryId = category.Id, basePrice = 50_000m });
-        return (manager, (await response.Content.ReadFromJsonAsync<DesignDto>())!);
+        return (manager, await TestCatalog.NewDesignAsync(manager, "P-" + Random.Shared.Next(10_000, 99_999)));
     }
 
     private static async Task<PhotoDto> UploadAsync(HttpClient client, Guid designId, byte[]? bytes = null)
@@ -141,7 +138,7 @@ public class PhotoTests(ApiFixture api)
         await UploadAsync(manager, design.Id);
         var current = await manager.GetFromJsonAsync<DesignDto>($"/api/catalog/designs/{design.Code}");
 
-        var edited = await manager.PutAsJsonAsync($"/api/catalog/designs/{design.Id}", current! with { BasePrice = 55_000m });
+        var edited = await manager.PutAsJsonAsync($"/api/catalog/designs/{design.Id}", current! with { Name = "Photo test (renamed)" });
 
         Assert.Single((await edited.Content.ReadFromJsonAsync<DesignDto>())!.Photos!);
     }

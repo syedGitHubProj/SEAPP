@@ -33,12 +33,22 @@ export interface FactoryDto {
   version: number;
 }
 
+/** An item a category's designs can include, e.g. "Bed king" for Bedroom. */
+export interface CategoryItemDto {
+  id: string;
+  name: string;
+  sortOrder: number;
+  isActive: boolean;
+  version: number;
+}
+
 export interface CategoryDto {
   id: string;
   name: string;
   sortOrder: number;
   isActive: boolean;
   version: number;
+  items: CategoryItemDto[];
 }
 
 export interface MaterialDto {
@@ -54,11 +64,27 @@ export interface ColorDto {
   hex: string;
 }
 
-export interface AccessoryDto {
-  id: string | null;
+/** An item a design offers, with this design's price, and whether it is ticked at first. */
+export interface DesignItemDto {
+  id: string;
+  categoryItemId: string;
   name: string;
   /** Null for roles that may not see prices (Salesman). */
   price: number | null;
+  isDefault: boolean;
+  /** False when the category item was switched off (only editors see these). */
+  isActive: boolean;
+}
+
+/** Something sold without a design: mirror, lights, mattress. */
+export interface OtherItemDto {
+  id: string;
+  name: string;
+  /** Null for roles that may not see prices (Salesman). */
+  price: number | null;
+  sortOrder: number;
+  isActive: boolean;
+  version: number;
 }
 
 export interface PhotoDto {
@@ -71,14 +97,10 @@ export interface DesignDto {
   code: string;
   name: string;
   categoryId: string;
-  /** Null for roles that may not see prices (Salesman). */
-  basePrice: number | null;
-  dimensions: string | null;
-  wood: string | null;
   description: string | null;
   materials: MaterialDto[];
   colors: ColorDto[];
-  accessories: AccessoryDto[];
+  items: DesignItemDto[];
   isActive: boolean;
   version: number;
   photos: PhotoDto[];

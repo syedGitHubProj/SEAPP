@@ -38,9 +38,12 @@ public static partial class AdminEndpoints
         if (before is not null) query = query.Where(a => a.At < before);
         if (!string.IsNullOrWhiteSpace(entityType))
         {
-            string[] types = entityType == nameof(Design)
-                ? [nameof(Design), nameof(DesignMaterial), nameof(DesignColor), nameof(DesignAccessory), nameof(DesignPhoto)]
-                : [entityType];
+            string[] types = entityType switch
+            {
+                nameof(Design) => [nameof(Design), nameof(DesignMaterial), nameof(DesignColor), nameof(DesignItem), nameof(DesignAccessory), nameof(DesignPhoto)],
+                nameof(Category) => [nameof(Category), nameof(CategoryItem)],
+                _ => [entityType],
+            };
             query = query.Where(a => types.Contains(a.EntityType));
         }
         if (!string.IsNullOrWhiteSpace(userName)) query = query.Where(a => a.UserName == userName.Trim());
@@ -73,6 +76,17 @@ public static partial class AdminEndpoints
         foreach (var c in await db.Categories.Where(c => ids.Contains(c.Id)).Select(c => new { c.Id, c.Name }).ToListAsync())
             Add(nameof(Category), c.Id, c.Name);
 
+        // A category's items are named "Category · Item".
+        ids = IdsOf(nameof(CategoryItem));
+        var categoryItems = await db.CategoryItems.Where(i => ids.Contains(i.Id)).Select(i => new { i.Id, i.CategoryId, i.Name }).ToListAsync();
+        var categoryIds = categoryItems.Select(i => i.CategoryId).Distinct().ToArray();
+        var categoryNames = await db.Categories.Where(c => categoryIds.Contains(c.Id)).ToDictionaryAsync(c => c.Id, c => c.Name);
+        foreach (var i in categoryItems) Add(nameof(CategoryItem), i.Id, $"{categoryNames.GetValueOrDefault(i.CategoryId, "?")} · {i.Name}");
+
+        ids = IdsOf(nameof(OtherItem));
+        foreach (var i in await db.OtherItems.Where(i => ids.Contains(i.Id)).Select(i => new { i.Id, i.Name }).ToListAsync())
+            Add(nameof(OtherItem), i.Id, i.Name);
+
         ids = IdsOf(nameof(AppUser));
         foreach (var u in await db.Users.Where(u => ids.Contains(u.Id)).Select(u => new { u.Id, u.FullName, u.UserName }).ToListAsync())
             Add(nameof(AppUser), u.Id, $"{u.FullName} ({u.UserName})");
@@ -83,13 +97,17 @@ public static partial class AdminEndpoints
             .Concat(await db.Set<DesignColor>().Where(o => optionIds.Contains(o.Id)).Select(o => new { o.Id, o.DesignId, o.Name }).ToListAsync())
             .Concat(await db.Set<DesignAccessory>().Where(o => optionIds.Contains(o.Id)).Select(o => new { o.Id, o.DesignId, o.Name }).ToListAsync())
             .ToList();
+        // A design's items take their name from the category item.
+        var designItemIds = IdsOf(nameof(DesignItem));
+        options.AddRange(await db.Set<DesignItem>().Where(o => designItemIds.Contains(o.Id))
+            .Join(db.CategoryItems, o => o.CategoryItemId, ci => ci.Id, (o, ci) => new { o.Id, o.DesignId, ci.Name }).ToListAsync());
         var photoIds = IdsOf(nameof(DesignPhoto));
         var photos = await db.Set<DesignPhoto>().Where(p => photoIds.Contains(p.Id)).Select(p => new { p.Id, p.DesignId }).ToListAsync();
 
         var designIds = IdsOf(nameof(Design)).Concat(options.Select(o => o.DesignId)).Concat(photos.Select(p => p.DesignId)).Distinct().ToArray();
         var designs = await db.Designs.Where(d => designIds.Contains(d.Id)).ToDictionaryAsync(d => d.Id, d => $"{d.Code} {d.Name}");
         foreach (var (id, label) in designs) Add(nameof(Design), id, label);
-        foreach (var r in rows.Where(r => r.EntityType is nameof(DesignMaterial) or nameof(DesignColor) or nameof(DesignAccessory)))
+        foreach (var r in rows.Where(r => r.EntityType is nameof(DesignMaterial) or nameof(DesignColor) or nameof(DesignAccessory) or nameof(DesignItem)))
         {
             var option = options.FirstOrDefault(o => o.Id.ToString() == r.EntityId);
             if (option is not null) labels[(r.EntityType, r.EntityId)] = $"{designs.GetValueOrDefault(option.DesignId, "?")} · {option.Name}";

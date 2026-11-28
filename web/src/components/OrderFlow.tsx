@@ -46,9 +46,7 @@ export function DraftItemRow({ item, editable = true }: { item: DraftItem; edita
       <div className="min-w-0 flex-1">
         <div className="truncate font-medium">{item.designName}</div>
         <div className="truncate text-xs text-zinc-500">
-          {item.designCode}
-          {extras && ` · ${extras}`}
-          {item.quantity > 1 && ` · ×${item.quantity}`}
+          {[item.designCode, extras, item.quantity > 1 ? `×${item.quantity}` : ""].filter(Boolean).join(" · ")}
         </div>
         <div className="flex items-baseline gap-2">
           <Money amount={draftItemTotal(item)} className="text-sm font-semibold" />

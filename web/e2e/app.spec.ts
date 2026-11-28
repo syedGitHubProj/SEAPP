@@ -34,8 +34,13 @@ test("salesman creates a Sale Order, then a linked factory order", async ({ page
   await page.goto("/catalog");
   await page.getByRole("link", { name: "Select Royal Sofa Set" }).click();
   await expect(page.getByRole("heading", { name: "Royal Sofa Set" })).toBeVisible();
+  await expect(page.getByRole("checkbox", { name: "3 seater sofa" })).toBeChecked();
+  await expect(page.getByRole("checkbox", { name: "Centre table" })).not.toBeChecked();
   await page.getByRole("checkbox", { name: "Centre table" }).check();
-  await page.getByRole("checkbox", { name: "Side tables (pair)" }).check();
+  await page.getByRole("checkbox", { name: "Side table" }).check();
+  await page.getByRole("button", { name: "More: Side table" }).click();
+  await expect(page.getByLabel("How many: Side table")).toHaveText("2");
+  await expect(page.getByText("6 items chosen")).toBeVisible();
   // No catalogue price and no option prices; only the total of the typed agreed price shows.
   await expect(page.getByText("Catalogue price")).toHaveCount(0);
   await expect(page.getByText("Rs.")).toHaveText(["Rs. 0"]);
@@ -125,6 +130,21 @@ test("a customer not found by phone is added during the Sale Order, and found ne
   await page.getByLabel(/Customer's phone number/).fill(number.replace("-", " "));
   await page.getByRole("button", { name: "Find" }).click();
   await expect(page.getByRole("list", { name: "Customer with this number" }).getByRole("button", { name: new RegExp(name) })).toHaveCount(1);
+});
+
+test("salesman adds an other item (a mirror) to the Sale Order without seeing its price", async ({ page }) => {
+  await page.goto("/catalog");
+  await page.getByRole("button", { name: /^Other items/ }).click();
+  await page.getByRole("link", { name: "Select Mirror" }).click();
+  await expect(page.getByRole("heading", { name: "Mirror" })).toBeVisible();
+  await expect(page.getByText("Catalogue price")).toHaveCount(0);
+  await page.getByRole("button", { name: "Increase quantity" }).click();
+  await page.getByLabel(/Agreed selling price/).fill("7000");
+  await expect(page.getByText("Rs. 14,000")).toBeVisible();
+  await page.getByRole("button", { name: "Add to Sale Order" }).click();
+  await expect(page).toHaveURL(/\/orders\/new$/);
+  await expect(page.getByText("Mirror", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("Rs. 14,000").first()).toBeVisible();
 });
 
 test("salesman has no customer list", async ({ page }) => {
@@ -250,20 +270,38 @@ test.describe("as manager", () => {
     await expect(page.getByRole("button", { name: new RegExp(`${name} Garden`) })).toHaveCount(0);
   });
 
-  test("adds a design with options and a photo, and a salesman can sell it", async ({ page, browser }) => {
+  test("adds a design with items, options and a photo, and a salesman can sell it", async ({ page, browser }) => {
     const code = `T-${Date.now().toString().slice(-6)}`;
+    const chair = unique("Lounge chair");
+    const cushion = unique("Cushion");
+
+    // The Living category's item list gets two new items.
+    await page.goto("/catalog/categories");
+    await page.getByRole("button", { name: "Items for Living" }).filter({ visible: true }).click();
+    const items = page.getByRole("region", { name: "Items for Living" });
+    for (const name of [chair, cushion]) {
+      await items.getByRole("button", { name: "Add item" }).click();
+      await page.getByLabel(/^Item name/).fill(name);
+      await page.getByRole("button", { name: "Save" }).click();
+      await expect(items.getByText(name)).toBeVisible();
+    }
+
     await page.goto("/catalog");
     await page.getByRole("link", { name: "Add design" }).click();
+    await expect(page.getByLabel(/^Base price/)).toHaveCount(0);
+    await expect(page.getByLabel(/^Dimensions/)).toHaveCount(0);
     await page.getByLabel(/^Design code/).fill(code);
     await page.getByLabel(/^Design name/).fill(`Test Chair ${code}`);
     await page.getByLabel(/^Category/).selectOption({ label: "Living" });
-    await page.getByLabel(/^Base price/).fill("50000");
+    await page.getByRole("checkbox", { name: chair, exact: true }).check();
+    await page.getByLabel(`Price for ${chair}`).fill("50000");
+    await page.getByLabel(`Ticked by default: ${chair}`).check();
+    await page.getByRole("checkbox", { name: cushion, exact: true }).check();
+    await page.getByLabel(`Price for ${cushion}`).fill("2000");
+    await expect(page.getByText("Rs. 50,000")).toBeVisible(); // price of the items ticked by default
     await page.getByRole("button", { name: "Add material" }).click();
     await page.getByRole("textbox", { name: "Material" }).fill("Leather");
     await page.getByRole("textbox", { name: "Extra charge" }).fill("5000");
-    await page.getByRole("button", { name: "Add accessory" }).click();
-    await page.getByRole("textbox", { name: "Accessory" }).fill("Cushion");
-    await page.getByRole("textbox", { name: "Price", exact: true }).fill("2000");
     await page.getByRole("button", { name: "Save design" }).click();
 
     // Saved: the editor reopens for the new design so photos can be added.
@@ -271,10 +309,12 @@ test.describe("as manager", () => {
     await page.locator('input[type="file"]').setInputFiles({ name: "chair.png", mimeType: "image/png", buffer: tinyPng });
     await expect(page.getByAltText("Main photo")).toBeVisible();
 
-    // The manager sees the catalogue price with the chosen options.
+    // The manager sees the catalogue price of the chosen items.
     await page.goto(`/catalog/${code}`);
-    await page.getByRole("checkbox", { name: "Cushion" }).check();
-    await expect(page.getByLabel(/Agreed selling price/)).toHaveValue("57000"); // 50,000 + 5,000 + 2,000
+    await expect(page.getByRole("checkbox", { name: chair })).toBeChecked();
+    await page.getByRole("checkbox", { name: cushion }).check();
+    await page.getByRole("button", { name: `More: ${cushion}` }).click();
+    await expect(page.getByLabel(/Agreed selling price/)).toHaveValue("59000"); // 50,000 + 2 × 2,000 + 5,000 leather
 
     // A salesman sees it with its photo, but no prices.
     const salesman = await browser.newContext({ storageState: stateFile("salesman") });
@@ -282,7 +322,8 @@ test.describe("as manager", () => {
     await sp.goto(`/catalog/${code}`);
     await expect(sp.getByRole("heading", { name: `Test Chair ${code}` })).toBeVisible();
     await expect(sp.getByRole("img", { name: `Test Chair ${code}` }).first()).toBeVisible();
-    await sp.getByRole("checkbox", { name: "Cushion" }).check();
+    await expect(sp.getByRole("checkbox", { name: chair })).toBeChecked();
+    await sp.getByRole("checkbox", { name: cushion }).check();
     await expect(sp.getByLabel(/Agreed selling price/)).toHaveValue("");
     await expect(sp.getByText("Catalogue price")).toHaveCount(0);
     await expect(sp.getByText("Rs.")).toHaveText(["Rs. 0"]);
@@ -294,9 +335,33 @@ test.describe("as manager", () => {
     await page.getByLabel(/^Design code/).fill("SF-310");
     await page.getByLabel(/^Design name/).fill("Copy");
     await page.getByLabel(/^Category/).selectOption({ label: "Sofa" });
-    await page.getByLabel(/^Base price/).fill("1000");
+    await page.getByRole("button", { name: "Save design" }).click();
+    await expect(page.getByText("Please check the highlighted fields.")).toBeVisible(); // no items yet
+    await page.getByRole("checkbox", { name: "3 seater sofa", exact: true }).check();
+    await page.getByLabel("Price for 3 seater sofa").fill("1000");
     await page.getByRole("button", { name: "Save design" }).click();
     await expect(page.getByText("That name or code is already used.")).toBeVisible();
+  });
+
+  test("adds, prices and switches off an other item", async ({ page }) => {
+    const name = unique("Wall clock");
+    await page.goto("/catalog");
+    await page.getByRole("link", { name: "Other items" }).click();
+    await expect(page.getByRole("heading", { name: "Other items", level: 1 })).toBeVisible();
+    await page.getByRole("button", { name: "Add item" }).click();
+    await page.getByLabel(/^Name/).fill(name);
+    await page.getByLabel(/^Price/).fill("4,500");
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByText(name).filter({ visible: true })).toBeVisible();
+    await expect(page.getByText("Rs. 4,500").filter({ visible: true }).first()).toBeVisible();
+
+    page.once("dialog", (d) => void d.accept());
+    await page.getByRole("button", { name: `Switch off: ${name}` }).filter({ visible: true }).click();
+    await expect(page.getByRole("button", { name: `Switch on: ${name}` }).filter({ visible: true })).toBeVisible();
+    await page.goto("/catalog");
+    await page.getByRole("button", { name: /^Other items/ }).click();
+    await expect(page.getByRole("link", { name: "Select Mirror" })).toBeVisible();
+    await expect(page.getByRole("link", { name: `Select ${name}` })).toHaveCount(0);
   });
 
   test("can't open staff accounts, settings or the audit log", async ({ page }) => {
@@ -383,6 +448,7 @@ const listPages = [
   ["/admin/settings", "Settings"],
   ["/admin/audit", "Audit log"],
   ["/catalog/categories", "Catalogue categories"],
+  ["/catalog/other-items", "Other items"],
 ] as const;
 
 test.describe("layout", () => {

@@ -1,22 +1,26 @@
 import type { DesignDto } from "./api-types";
 
-/** What the salesman chose for one design. */
+/** What the salesman chose for one design: a material, and how many of each item (0 = not chosen). */
 export interface DesignChoice {
   materialId: string | null;
-  accessoryIds: string[];
+  quantities: Record<string, number>;
+}
+
+/** The items ticked by default, one of each: where a salesman starts. */
+export function defaultQuantities(design: Pick<DesignDto, "items">): Record<string, number> {
+  return Object.fromEntries(design.items.filter((i) => i.isDefault && i.isActive).map((i) => [i.id, 1]));
 }
 
 /**
- * Catalogue price for one piece: base price + material surcharge + chosen accessories.
- * Null when the person may not see prices (the API leaves them out for a Salesman).
+ * Catalogue price of the chosen set: each chosen item's price × its quantity, plus the material's
+ * extra charge (once). Null when the person may not see prices (the API leaves them out for a Salesman).
  */
-export function catalogUnitPrice(design: Pick<DesignDto, "basePrice" | "materials" | "accessories">, choice: DesignChoice): number | null {
-  if (design.basePrice === null) return null;
+export function catalogPrice(design: Pick<DesignDto, "materials" | "items">, choice: DesignChoice): number | null {
+  const chosen = design.items.filter((i) => (choice.quantities[i.id] ?? 0) > 0);
+  if (design.items.some((i) => i.price === null)) return null;
+  const items = chosen.reduce((sum, i) => sum + (i.price ?? 0) * choice.quantities[i.id], 0);
   const surcharge = design.materials.find((m) => m.id === choice.materialId)?.surcharge ?? 0;
-  const accessories = design.accessories
-    .filter((a) => a.id !== null && choice.accessoryIds.includes(a.id))
-    .reduce((sum, a) => sum + (a.price ?? 0), 0);
-  return design.basePrice + surcharge + accessories;
+  return chosen.length === 0 ? 0 : items + surcharge;
 }
 
 /** The placeholder artwork to show for a category name when a design has no photo. */

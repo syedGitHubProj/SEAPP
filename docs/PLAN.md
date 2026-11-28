@@ -196,6 +196,12 @@ Work is committed directly to `main` for now, with no pull requests (owner's dec
   - A new Sale Order finds the customer by full phone number (exact match, with or without +92); if nobody has it, the salesman adds a new customer there.
   - No "Add customer" button anywhere; Manager and Admin edit and switch off customers on the Customers page.
   - Salesmen see no catalogue prices, factory costs or margins (the API leaves prices out); they type the agreed selling price.
+- **2h. Catalogue items (done, 2026-11-28, owner feedback):**
+  - Designs no longer have a base price, dimensions, wood or optional accessories (old values stay in the database, unused).
+  - Each category has a list of items (Bedroom: Bed king, Bed queen, Almari 4/3/2 door, Side table, Dressing table, Bed footrest), kept under Catalogue → Categories → Items.
+  - Each design picks the items it offers, with its own price per item and which ones are ticked by default. A design must offer at least one item.
+  - On a Sale Order the salesman ticks items and sets a quantity for each; the catalogue price is the sum (plus the material's extra charge). Salesmen still see no prices and type the agreed price for the chosen items.
+  - "Other items" (Mirror, Locks & Handles, Lights, Mattress) are a simple price list sold without a design (Catalogue → Other items). Photos for them are not built yet.
 
 *Checkpoint:* the owner creates the Droplet, the Spaces bucket and the GitHub secrets (step-by-step guide provided). Staging goes live with real sign-in.
 
@@ -206,6 +212,7 @@ Work is committed directly to `main` for now, with no pull requests (owner's dec
   - A Salesman never sees catalogue prices or factory costs; they always type the agreed selling price per piece, with a quantity per item.
   - A Salesman's factory order has no cost. It waits for a Manager, who enters the factory cost per line and approves, or rejects with a reason; the Salesman sees the reason and can fix and resend.
   - One Sale Order can be split across several factory orders (different factories); each Sale Order line is on only one active factory order.
+  - A design's chosen items (Bed king ×1, Side table ×2…) are saved on the Sale Order line. Decide in 3a whether each item becomes its own line, so items of one design can go to different factories.
 - Advances and balance collections.
 - Cancellations and refunds with a reason and approval.
 - Purchase orders to factories, created against a sales order; each PO line linked to a sales-order line, with factory cost. Production tracking.

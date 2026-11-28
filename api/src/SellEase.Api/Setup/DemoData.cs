@@ -75,17 +75,74 @@ public static class DemoData
                 categoryIds[name] = created.Id = Guid.CreateVersion7();
                 return created.Id;
             });
-            var designs = new[]
+
+            // Each category's item list; an item already there (same name) is reused.
+            var categoryItems = await db.CategoryItems.ToListAsync();
+            Guid ItemId(Guid categoryId, string name)
             {
-                Make("RY-101", "Royal Sofa Set", category["Royal"], 185_000, "3+2+1 seater", "Sheesham", "Hand-carved frame with gold-leaf detailing.", true, [("Centre table", 25_000), ("Side tables (pair)", 18_000)]),
-                Make("RY-102", "Royal Bed Set", category["Royal"], 265_000, "King, 6x6.5 ft", "Sheesham", "Carved headboard, two side tables and dressing table.", false, [("Mattress", 45_000), ("Wardrobe", 120_000)]),
-                Make("SF-310", "Modern Sofa Set", category["Sofa"], 125_000, "3+2+1 seater", "Deodar", "Clean lines with removable cushion covers.", true, [("Centre table", 25_000), ("Side tables (pair)", 18_000)]),
-                Make("SF-322", "L-Shape Corner Sofa", category["Sofa"], 158_000, "9 x 6 ft", "Deodar", "Seven-seater corner sofa for family lounges.", true, [("Centre table", 25_000), ("Extra cushions", 6_000)]),
-                Make("BD-204", "Luxury Bedroom Set", category["Bedroom"], 245_000, "King, 6x6.5 ft", "Sheesham", "Bed, two side tables, dressing table and wardrobe.", false, [("Mattress", 45_000), ("Storage under bed", 20_000)]),
-                Make("DN-108", "Classic Dining Set", category["Dining"], 165_000, "6 seats", "Sheesham", "Six-seat dining table with upholstered chairs.", false, [("Glass top", 22_000), ("Sideboard", 75_000)]),
-                Make("LV-402", "Coffee Table Set", category["Living"], 42_000, "4 x 2 ft + 2 side tables", "Teak", "Coffee table with matching side tables.", false, [("Glass top", 9_000)]),
+                var found = categoryItems.FirstOrDefault(i => i.CategoryId == categoryId && string.Equals(i.Name, name, StringComparison.OrdinalIgnoreCase));
+                if (found is not null) return found.Id;
+                var created = new CategoryItem
+                {
+                    Id = Guid.CreateVersion7(), CategoryId = categoryId, Name = name,
+                    SortOrder = (categoryItems.Count(i => i.CategoryId == categoryId) + 1) * 10,
+                };
+                categoryItems.Add(created);
+                db.CategoryItems.Add(created);
+                return created.Id;
+            }
+
+            // The owner's example (2026-11-28): a bedroom design's items, with 1, 3, 6 and 7 ticked by default.
+            (string, decimal, bool)[] bedroom =
+            [
+                ("Bed king", 120_000, true), ("Bed queen", 100_000, false), ("Almari 4 door", 80_000, true),
+                ("Almari 3 door", 65_000, false), ("Almari 2 door", 50_000, false), ("Side table", 15_000, true),
+                ("Dressing table", 30_000, true), ("Bed footrest", 12_000, false),
+            ];
+            var demo = new (string Code, string Name, string Category, string Description, bool Upholstered, (string Item, decimal Price, bool Default)[] Items)[]
+            {
+                ("RY-101", "Royal Sofa Set", "Royal", "Hand-carved frame with gold-leaf detailing.", true,
+                    [("3 seater sofa", 85_000, true), ("2 seater sofa", 60_000, true), ("1 seater sofa", 40_000, true), ("Centre table", 25_000, false), ("Side table", 9_000, false)]),
+                ("RY-102", "Royal Bed Set", "Royal", "Carved headboard, two side tables and dressing table.", false,
+                    [("Bed king", 150_000, true), ("Side table", 20_000, true), ("Dressing table", 45_000, true), ("Almari 4 door", 120_000, false)]),
+                ("SF-310", "Modern Sofa Set", "Sofa", "Clean lines with removable cushion covers.", true,
+                    [("3 seater sofa", 60_000, true), ("2 seater sofa", 40_000, true), ("1 seater sofa", 25_000, true), ("Centre table", 25_000, false), ("Side table", 9_000, false)]),
+                ("SF-322", "L-Shape Corner Sofa", "Sofa", "Seven-seater corner sofa for family lounges.", true,
+                    [("Corner sofa (L-shape)", 158_000, true), ("Centre table", 25_000, false), ("Extra cushions", 6_000, false)]),
+                ("BD-204", "Luxury Bedroom Set", "Bedroom", "Bed, side tables, dressing table and almari.", false, bedroom),
+                ("BD-210", "Shandar Bedroom Set", "Bedroom", "Carved bedroom set; pick the bed size and almari.", false, bedroom),
+                ("DN-108", "Classic Dining Set", "Dining", "Dining table with upholstered chairs.", false,
+                    [("Dining table (6 seats)", 75_000, true), ("Dining chair", 15_000, true), ("Sideboard", 75_000, false), ("Glass top", 22_000, false)]),
+                ("LV-402", "Coffee Table Set", "Living", "Coffee table with matching side tables.", false,
+                    [("Coffee table", 30_000, true), ("Side table", 6_000, true), ("Glass top", 9_000, false)]),
             };
-            db.Designs.AddRange(designs.Where(d => !designCodes.Contains(d.Code)));
+
+            List<DesignItem> ItemsFor(Guid categoryId, (string Item, decimal Price, bool Default)[] items) =>
+                items.Select((x, i) => new DesignItem { CategoryItemId = ItemId(categoryId, x.Item), Price = x.Price, IsDefault = x.Default, SortOrder = i }).ToList();
+
+            foreach (var d in demo.Where(d => !designCodes.Contains(d.Code)))
+            {
+                var categoryId = category[d.Category];
+                db.Designs.Add(new Design
+                {
+                    Code = d.Code, Name = d.Name, CategoryId = categoryId, Description = d.Description,
+                    Materials = (d.Upholstered ? Fabrics : Woods).Select((m, i) => new DesignMaterial { Name = m.Name, Surcharge = m.Surcharge, SortOrder = i }).ToList(),
+                    Colors = (d.Upholstered ? FabricColors : WoodColors).Select((c, i) => new DesignColor { Name = c.Name, Hex = c.Hex, SortOrder = i }).ToList(),
+                    Items = ItemsFor(categoryId, d.Items),
+                });
+            }
+
+            // Demo designs loaded before items existed (2026-11-28) get their items now.
+            var codes = demo.Select(d => d.Code).ToArray();
+            foreach (var old in await db.Designs.Include(x => x.Items).Where(x => codes.Contains(x.Code) && !x.Items.Any()).ToListAsync())
+                old.Items = ItemsFor(old.CategoryId, demo.First(d => d.Code == old.Code).Items);
+        }
+
+        var otherNames = (await db.OtherItems.Select(i => i.Name).ToListAsync()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        {
+            (string, decimal)[] others = [("Mirror", 8_000), ("Locks & Handles", 3_500), ("Lights", 6_000), ("Mattress", 45_000)];
+            foreach (var (name, price, i) in others.Select((o, i) => (o.Item1, o.Item2, i)).Where(o => !otherNames.Contains(o.Item1)))
+                db.OtherItems.Add(new OtherItem { Name = name, Price = price, SortOrder = (i + 1) * 10 });
         }
 
         await db.SaveChangesAsync();
@@ -95,14 +152,4 @@ public static class DemoData
     {
         public Guid this[string name] => find(name);
     }
-
-    private static Design Make(string code, string name, Guid categoryId, decimal price, string dimensions, string wood,
-        string description, bool upholstered, (string Name, decimal Price)[] accessories) => new()
-    {
-        Code = code, Name = name, CategoryId = categoryId, BasePrice = price,
-        Dimensions = dimensions, Wood = wood, Description = description,
-        Materials = (upholstered ? Fabrics : Woods).Select((m, i) => new DesignMaterial { Name = m.Name, Surcharge = m.Surcharge, SortOrder = i }).ToList(),
-        Colors = (upholstered ? FabricColors : WoodColors).Select((c, i) => new DesignColor { Name = c.Name, Hex = c.Hex, SortOrder = i }).ToList(),
-        Accessories = accessories.Select((a, i) => new DesignAccessory { Name = a.Name, Price = a.Price, SortOrder = i }).ToList(),
-    };
 }

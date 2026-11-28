@@ -8,7 +8,6 @@ public class AuditLogTests(ApiFixture api)
 {
     private sealed record AuditDto(Guid Id, DateTimeOffset At, string? UserName, string Action, string EntityType, string EntityId, string? Label, string? Changes);
     private sealed record CustomerDto(Guid Id, string Number, string Name);
-    private sealed record CategoryDto(Guid Id, string Name);
     private sealed record DesignDto(Guid Id, string Code);
 
     [Fact]
@@ -32,12 +31,15 @@ public class AuditLogTests(ApiFixture api)
     public async Task A_designs_options_are_named_after_the_design_and_listed_with_it()
     {
         var admin = await api.SignInAsync(ApiFixture.AdminUser);
-        var category = (await admin.GetFromJsonAsync<List<CategoryDto>>("/api/catalog/categories"))!.First();
+        var sofa = await TestCatalog.CategoryIdAsync(admin);
+        var itemName = ApiFixture.UniqueName("Audit seater");
+        var item = await TestCatalog.AddItemAsync(admin, sofa, itemName);
         var code = "AU-" + Random.Shared.Next(1000, 9999);
         var response = await admin.PostAsJsonAsync("/api/catalog/designs", new
         {
-            code, name = "Audit Sofa", categoryId = category.Id, basePrice = 1000m,
+            code, name = "Audit Sofa", categoryId = sofa,
             materials = new[] { new { name = "Velvet", surcharge = 500m } },
+            items = new[] { new { categoryItemId = item.Id, price = 1000m, isDefault = true } },
         });
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
@@ -45,6 +47,10 @@ public class AuditLogTests(ApiFixture api)
 
         Assert.Contains(rows, r => r.EntityType == "Design" && r.Label == $"{code} Audit Sofa");
         Assert.Contains(rows, r => r.EntityType == "DesignMaterial" && r.Label == $"{code} Audit Sofa · Velvet");
+        Assert.Contains(rows, r => r.EntityType == "DesignItem" && r.Label == $"{code} Audit Sofa · {itemName}");
+
+        var categoryRows = (await admin.GetFromJsonAsync<List<AuditDto>>("/api/admin/audit?entityType=Category&take=100"))!;
+        Assert.Contains(categoryRows, r => r.EntityType == "CategoryItem" && r.Label == $"Sofa · {itemName}");
     }
 
     [Fact]
